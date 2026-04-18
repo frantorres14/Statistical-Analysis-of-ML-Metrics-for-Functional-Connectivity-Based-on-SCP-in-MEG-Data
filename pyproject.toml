@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tesis"
+version = "0.1.0"
+description = "Análisis de datos MEG del Human Connectome Project (S1200) - Matrices de correlación"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Francisco Javier Torres Santana", email = "francisco.torressa@uaem.edu.mx"}
+]
+keywords = ["neuroimaging", "MEG", "correlation", "brain-connectivity", "HCP"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+
+dependencies = [
+    "pandas>=1.5.0",
+    "numpy>=1.23.0",
+    "scipy>=1.9.0",
+    "matplotlib>=3.6.0",
+    "seaborn>=0.12.0",
+    "boto3>=1.26.0",
+    "jupyter>=1.0.0",
+    "ipython>=8.0.0",
+    "scikit-learn>=1.2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+docs = [
+    "sphinx>=5.0",
+    "sphinx-rtd-theme>=1.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+# Esto buscará automáticamente todas las carpetas con __init__.py dentro de src
+where = ["src"]

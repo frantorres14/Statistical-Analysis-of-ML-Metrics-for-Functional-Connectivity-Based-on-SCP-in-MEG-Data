@@ -1,0 +1,21 @@
+# --- Entornos y credenciales ---
+.venv/
+.env
+
+# --- Datos y Modelos (Archivos pesados) ---
+data/
+models/
+
+# --- Carpetas temporales y de experimentación ---
+sandbox/
+
+# --- Archivos generados por Python ---
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+
+# --- Archivos generados por Jupyter ---
+.ipynb_checkpoints/
