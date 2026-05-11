@@ -1,6 +1,7 @@
 # --- Entornos y credenciales ---
 .venv/
 .env
+.vscode
 
 # --- Datos y Modelos (Archivos pesados) ---
 data/
