@@ -70,21 +70,3 @@ def descargar_carpeta_s3(bucket_nombre, s3_ruta_carpeta, local_ruta_destino):
                         s3.download_file(bucket_nombre, s3_key, local_file_path)
                 else:
                     continue
-
-path_raw_data = "D:/raw_data/"
-carpeta_sujetos = os.listdir(path_raw_data)
-for sujeto in carpeta_sujetos:
-    if sujeto == "106521":
-        break
-    path_sujeto = path_raw_data + sujeto
-    for archivo in os.listdir(path_sujeto):
-        if archivo[-13:-4] != "trialinfo":
-            data = sio.loadmat(path_sujeto +"/"+ archivo)
-            # Extraer y organizar los datos MEG en un DataFrame de pandas
-            trials = data['data'][0,0]['trial']  # Lista de arrays (ensayos)
-            labels = [lbl[0] if isinstance(lbl, np.ndarray) else lbl for lbl in data["data"][0,0]['label'].squeeze()]  # Nombres de canales
-            for ensayo, trial in enumerate(trials[0]):
-                # trial: array (n_canales, n_tiempo) para cada ensayo
-                df = pd.DataFrame(trial, index=labels).T  # Transponer para que columnas sean canales
-                df_corr = df.corr(method = 'pearson')
-                print(ensayo, df_corr.head())

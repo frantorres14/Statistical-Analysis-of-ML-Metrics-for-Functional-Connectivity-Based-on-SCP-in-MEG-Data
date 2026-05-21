@@ -4,8 +4,9 @@ import pandas as pd
 from typing import Iterator, Tuple
 from scipy.signal import butter, filtfilt
 from tesis.dataclass import DataHCP 
+from typing import List, Optional
 
-def obtener_trials_validos(data_hcp: DataHCP) -> Iterator[Tuple[int, pd.DataFrame]]:
+def obtener_trials_validos(data_hcp: DataHCP, canales: Optional[List[str]] = None) -> Iterator[Tuple[int, pd.DataFrame]]:
     """
     Evalúa los metadatos de un archivo HCP y extrae secuencialmente los ensayos válidos.
 
@@ -16,6 +17,8 @@ def obtener_trials_validos(data_hcp: DataHCP) -> Iterator[Tuple[int, pd.DataFram
     Args:
         data_hcp: Instancia de DataHCP que contiene los datos y metadatos de un archivo
             .mat de los registros MEG del HCP.
+        canales (list, optional): Lista de nombres de canales a incluir. 
+                Si es None, se incluyen todos los canales.
 
     Yields:
         Tuple[int, pd.DataFrame]: Una tupla que contiene:
@@ -30,30 +33,35 @@ def obtener_trials_validos(data_hcp: DataHCP) -> Iterator[Tuple[int, pd.DataFram
     
     if data_hcp.task == "Wrkmem":
         # Máscara: No fijación (columna 3 != 0) y respuestas correctas (columna 13 == 1.0)
-        mask = (info[:, 3] != 0) | (info[:, 13] == 1.0)
+        task_type_col= 3
+        correcta_col= 13
+        task_type_map= {1: "0-back", 2: "2-back"}
+        mask = (info[:, task_type_col] != 0) | (info[:, correcta_col] == 1.0)
     elif data_hcp.task == "Motort":
         # Máscara: Tareas de movimiento activo (columna 1 es 1, 2, 4, o 5)
-        mask = np.isin(info[:, 1], [1, 2, 4, 5])
+        task_type_col= 1
+        task_type_map= {1: "L-hand",2: "L-foot",4: "R-hand", 5: "R-foot" }
+        mask = np.isin(info[:, task_type_col], [1, 2, 4, 5])
     else:
         raise ValueError(f"Tarea no soportada: '{data_hcp.task}'. Se esperaba 'Wrkmem' o 'Motort'.")
 
     trials_validos = np.where(mask)[0]
     
     for trial in trials_validos:
-        df_trial = data_hcp.get_df_trial(i_trial=trial)
-        yield trial, df_trial
+        df_trial = data_hcp.get_df_trial(i_trial=trial, canales= canales)
+        task_type = task_type_map[info[trial, task_type_col]]
+        yield trial, task_type, df_trial
 
 
-def guardar_csv(df: pd.DataFrame, nombre_base: str, subfijo_proceso : str, trial_id: int, path_save: str) -> None:
+def guardar_csv(df: pd.DataFrame, nombre_archivo: str, subfijo_proceso : str, trial_id: int, path_save: str) -> None:
     """
     Exporta el DataFrame de un ensayo específico a un archivo CSV.
     Crea el directorio de destino si no existe y guarda los datos del DataFrame.
 
     Args:
         df (pd.DataFrame): Los datos procesados que se desean guardar.
-        nombre_base (str): Prefijo para el nombre del archivo.
-        subfijo_proceso (str): El subfijo del proceso que se llevó acabo antes de guardar
-            el dataframe. Es parte del nombre del archivo después del nombre base.
+        nombre_archivo (str): Nombre del archivo.
+        subfijo_proceso (str): El subfijo del proceso que se llevó acabo antes de guardar el dataframe. Es parte del nombre del archivo después del nombre base.
         trial_id (int): El número identificador del ensayo.
         path_save (str): Ruta del directorio donde se guardará el archivo.
 
@@ -62,6 +70,7 @@ def guardar_csv(df: pd.DataFrame, nombre_base: str, subfijo_proceso : str, trial
     """
     os.makedirs(path_save, exist_ok=True)
     
+    nombre_base = os.path.splitext(nombre_archivo)[0]
     archivo_name = f"{nombre_base}_{subfijo_proceso}_{trial_id}.csv"
     ruta_guardar = os.path.join(path_save, archivo_name)
     

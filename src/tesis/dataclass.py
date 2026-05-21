@@ -3,7 +3,7 @@ import pandas as pd
 import scipy.io as sio
 import matplotlib.pyplot as plt
 import re
-from typing import List, Optional, Union
+from typing import List, Optional
 
 class DataHCP:
     """
