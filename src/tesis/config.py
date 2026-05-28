@@ -29,3 +29,16 @@ FILTER_ORDER = 4
 FREQ_LOW = 1.0
 FREQ_HIGH = 40.0
 
+
+# --- PARÁMETROS DE TRIALINFO ---
+COLUMNAS_TRIALINFO_WRKMEM= [
+    "run", "block", "id_nan", "img_type", "mem_type", 
+    "target_type", "trigger_onset", "trigger_offset", "seq_of_img", "is_pressed",
+    "is_pressed_late", "is_double_resp", "pressed_code", "is_correct", "is_lure_correct",
+    "resp_time", "resp_duration", "is_first_block", "is_last_block", "prev_run",
+    "prev_block", "prev_id_nan", "prev_img_type", "prev_mem_type", "prev_target_type",
+    "prev_trigger_onset", "prev_trigger_offset", "prev_seq_of_img", "prev_is_pressed", "prev_is_pressed_late",
+    "prev_is_double_resp", "prev_pressed_code", "prev_is_correct", "prev_is_lure_correct", "prev_resp_time",
+    "prev_resp_duration", "prev_is_first_block", "prev_is_last_block", "press_on_onset", "has_trial_nans"
+]
+
