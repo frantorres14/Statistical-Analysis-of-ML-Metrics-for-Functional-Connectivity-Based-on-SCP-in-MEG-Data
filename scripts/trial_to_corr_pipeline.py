@@ -1,19 +1,20 @@
-"""Pipeline de procesamiento en paralelo para datos MEG del HCP.
+"""Pipeline de procesamiento en paralelo para datos MEG filtrados a 
+matrices de correlación.
 
 Este script expone una interfaz de línea de comandos (CLI) para orquestar
-el preprocesamiento de múltiples sujetos de manera concurrente utilizando
-un pool de procesos distribuidos.
+la generación de matrices de correlación de múltiples sujetos de manera
+concurrente utilizando un pool de procesos distribuidos.
 
 Ejemplo de uso:
-    $ uv run script/preprocess_meg_data.py --raw-dir ./data/raw_data --intermediate-dir ./data/intermediate_data
+    $ uv run scripts/trial_to_corr_pipeline.py --input-dir ./data/intermediate_data/filtered_data --output-dir ./data/intermediate_data/correlation_matrices
 """
 
 import argparse
 import multiprocessing as mp
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 import time
-from tesis.preprocess import procesar_sujeto
+from tesis.tools import procesamiento_paralelo_por_sujeto
+from tesis.features import corr_matrices_sujeto_pipeline
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,19 +27,19 @@ def parse_args() -> argparse.Namespace:
             - workers (int): Número de procesos paralelos a ejecutar.
     """
     parser = argparse.ArgumentParser(
-        description="Pipeline de Preprocesamiento MEG - HCP"
+        description="Pipeline de transformacion de datos MEG a matrices de correlacion"
     )
     parser.add_argument(
-        "--raw-dir",
+        "--input-dir",
         type=Path,
         required=True,
-        help="Directorio de datos raw (origen)",
+        help="Directorio de origen (datos filtrados)",
     )
     parser.add_argument(
-        "--intermediate-dir",
+        "--output-dir",
         type=Path,
         required=True,
-        help="Directorio de salida (datos intermedios)",
+        help="Directorio de salida (datos correlacionados)",
     )
     parser.add_argument(
         "--workers",
@@ -60,30 +61,16 @@ def main() -> None:
     args = parse_args()
 
     # Obtiene y ordena la lista de carpetas de sujetos disponibles
-    lista_sujetos = sorted(p.name for p in args.raw_dir.iterdir() if p.is_dir())
+    lista_sujetos = sorted(p.name for p in args.input_dir.iterdir() if p.is_dir())
 
     print(f"Iniciando procesamiento de {len(lista_sujetos)} sujetos...")
     print(f"Workers activos: {args.workers}")
 
-    # Inicialización del contexto de procesamiento paralelo
-    with ProcessPoolExecutor(max_workers=args.workers) as executor:
-        # Mapea cada futuro con su respectivo identificador de sujeto
-        futures = {
-            executor.submit(
-                procesar_sujeto, sujeto, args.raw_dir, args.intermediate_dir
-            ): sujeto
-            for sujeto in lista_sujetos
-        }
-
-        # Procesa los resultados a medida que van finalizando (asíncrono)
-        for future in as_completed(futures):
-            sujeto = futures[future]
-            try:
-                # Captura el retorno exitoso de la función `procesar_sujeto`
-                print(future.result())
-            except Exception as e:
-                # Evita que un error en un sujeto tire abajo todo el pipeline
-                print(f"[ERROR crítico en {sujeto}]: {e}")
+    procesamiento_paralelo_por_sujeto(lista_sujetos= lista_sujetos,
+                                      funcion_sujeto= corr_matrices_sujeto_pipeline,
+                                      workers= args.workers,
+                                      paths=(args.input_dir, args.output_dir),
+                                      )
 
     # Imprimir en el tiempo de ejecución en segundos
     fin = time.perf_counter()

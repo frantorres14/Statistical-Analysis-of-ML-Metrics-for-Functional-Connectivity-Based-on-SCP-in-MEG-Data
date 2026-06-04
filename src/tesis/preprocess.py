@@ -3,12 +3,14 @@ import pandas as pd
 import scipy.io as sio
 import matplotlib.pyplot as plt
 import re
-from typing import List, Optional, Union, Iterator, Tuple
+from typing import List, Optional, Union, Iterator, Tuple, Callable
 from scipy.signal import butter, sosfiltfilt
 from pathlib import Path
 import os
 from functools import lru_cache
 from tesis.config import CANALES_VALIDOS
+from tesis.tools import metadata_nombre_raw, guardar_procesamiento_parquet
+
 
 class DataHCP:
     """
@@ -202,7 +204,7 @@ def get_common_channels(raw_data_path: Union[str, Path]) -> List[str]:
 
 
 
-def obtener_trials_validos(data_hcp: DataHCP, canales: Optional[List[str]] = None) -> Iterator[Tuple[int, pd.DataFrame]]:
+def obtener_trials_validos(data_hcp: DataHCP, canales: Optional[List[str]] = None) -> Iterator[Tuple[str, str, pd.DataFrame]]:
     """
     Evalúa los metadatos de un archivo HCP y extrae secuencialmente los ensayos válidos.
 
@@ -217,9 +219,9 @@ def obtener_trials_validos(data_hcp: DataHCP, canales: Optional[List[str]] = Non
                 Si es None, se incluyen todos los canales.
 
     Yields:
-        Tuple[int, pd.DataFrame]: Una tupla que contiene:
-            - int: El índice o número identificador del ensayo (trial).
-            - pd.DataFrame: Los datos correspondientes a ese ensayo.
+        Tuple[str, str, pd.DataFrame]: Una tupla con el número de ensayo (basado en 1), 
+            el tipo de tarea (e.g., '0-back', '2-back', 'L-hand', etc.) y un DataFrame 
+            de Pandas con los datos del ensayo filtrado.
 
     Raises:
         ValueError: Si el tipo de tarea detectada en los metadatos no es 
@@ -228,18 +230,20 @@ def obtener_trials_validos(data_hcp: DataHCP, canales: Optional[List[str]] = Non
     info = data_hcp.get_trialinfo()
     
     if data_hcp.task == "Wrkmem":
-        # Valores de las columnas a tomar en cuenta para la máscara
-        task_type_col= 3
-        correcta_col= 13
-        resp_time_col = 15
+        # Valores de las columnas a tomar en cuenta para la máscara para "Wrkmem"
+        task_type_col= 3    # Columna para identificar tipo de tarea
+        correcta_col= 13    # Columna para identificar si una respuesta es correcta
+        resp_time_col = 15  # Columna con el tiempo de respuesta 
         task_type_map= {1: "0-back", 2: "2-back"}
         # Se aceptan los trials que no sean fijación, la respuesta sea correcta y se conteste después de 150 ms
         mask= (info[:, task_type_col] != 0) & (info[:, correcta_col] == 1.0) & (info[:, resp_time_col] > 0.15)
+
     elif data_hcp.task == "Motort":
-        # Máscara: Tareas de movimiento activo (columna 1 es 1, 2, 4, o 5)
-        task_type_col= 1
+        # Valores de las columnas a tomar en cuenta para la máscara para "Motort"
+        task_type_col= 1                                                    # Columna para identificar el tipo de tarea
         task_type_map= {1: "L-hand",2: "L-foot",4: "R-hand", 5: "R-foot" }
         mask = np.isin(info[:, task_type_col], [1, 2, 4, 5])
+    
     else:
         raise ValueError(f"Tarea no soportada: '{data_hcp.task}'. Se esperaba 'Wrkmem' o 'Motort'.")
 
@@ -248,59 +252,8 @@ def obtener_trials_validos(data_hcp: DataHCP, canales: Optional[List[str]] = Non
     for trial in trials_validos:
         df_trial = data_hcp.get_df_trial(i_trial=trial, canales= canales)
         task_type = task_type_map[info[trial, task_type_col]]
-        yield trial, task_type, df_trial
+        yield str(trial), task_type, df_trial
 
-
-def guardar_csv(df: pd.DataFrame, nombre_archivo: str, subfijo_proceso : str, trial_id: int, path_save: str) -> None:
-    """
-    Exporta el DataFrame de un ensayo específico a un archivo CSV.
-    Crea el directorio de destino si no existe y guarda los datos del DataFrame.
-
-    Args:
-        df (pd.DataFrame): Los datos procesados que se desean guardar.
-        nombre_archivo (str): Nombre del archivo.
-        subfijo_proceso (str): El subfijo del proceso que se llevó acabo antes de guardar el dataframe. Es parte del nombre del archivo después del nombre base.
-        trial_id (int): El número identificador del ensayo.
-        path_save (str): Ruta del directorio donde se guardará el archivo.
-
-    Returns:
-        None
-    """
-    os.makedirs(path_save, exist_ok=True)
-    
-    nombre_base = os.path.splitext(nombre_archivo)[0]
-    archivo_name = f"{nombre_base}_{subfijo_proceso}_{trial_id}.csv"
-    ruta_guardar = os.path.join(path_save, archivo_name)
-    
-    df.to_csv(ruta_guardar, index=False)
-
-
-def guardar_parquet(df: pd.DataFrame, nombre_archivo: str, subfijo_proceso: str, trial_id: int, path_save: str) -> None:
-    """
-    Exporta el DataFrame de un ensayo específico a un archivo Parquet.
-    Crea el directorio de destino si no existe y guarda los datos del DataFrame
-    de forma comprimida y optimizada.
-
-    Args:
-        df (pd.DataFrame): Los datos procesados que se desean guardar.
-        nombre_archivo (str): Nombre del archivo base.
-        subfijo_proceso (str): El subfijo del proceso que se llevó acabo antes de guardar el dataframe. 
-                               Es parte del nombre del archivo después del nombre base.
-        trial_id (int): El número identificador del ensayo.
-        path_save (str): Ruta del directorio donde se guardará el archivo.
-
-    Returns:
-        None
-    """
-    os.makedirs(path_save, exist_ok=True)
-    
-    nombre_base = os.path.splitext(nombre_archivo)[0]
-    # Cambiamos la extensión a .parquet
-    archivo_name = f"{nombre_base}_{subfijo_proceso}_{trial_id}.parquet"
-    ruta_guardar = os.path.join(path_save, archivo_name)
-    
-    # index=False evita guardar la columna del índice si no es necesaria, ahorrando más espacio
-    df.to_parquet(ruta_guardar, index=False, engine='pyarrow')
 
 @lru_cache(maxsize=32)
 def _crear_filtro_sos(frecuencias: Tuple[float, float], orden: int, fs: float,) -> np.ndarray:
@@ -449,9 +402,7 @@ def df_trialinfo_wrkmem(path: str, columns: List[str]) -> pd.DataFrame:
     return pd.concat(dataframes_ensayos, ignore_index=True)
 
 
-TASK_REGEX = re.compile(r"-(.*?)_")
-
-def procesar_archivo(path_archivo: Path, path_sujeto_guardar: Path) -> None:
+def filtrar_archivo(path_archivo: Path, path_sujeto_guardar: Path) -> None:
     """Procesa un archivo individual de MEG aplicando filtros por ensayo.
 
     Identifica la tarea del archivo mediante expresiones regulares. Si es una 
@@ -468,52 +419,65 @@ def procesar_archivo(path_archivo: Path, path_sujeto_guardar: Path) -> None:
     Returns:
         None
     """
+    # Se obtiene el nombre del archivo y termina si es una archivo "trialinfo"
     archivo = path_archivo.name
     if "trialinfo" in archivo:
         return
-
-    match = TASK_REGEX.search(archivo)
-    if not match:
-        return
-
-    tarea = match.group(1)
+    
+    # Se obtienen los datos y metadatos del archivo}
     data = DataHCP(str(path_archivo))
+    metadata= metadata_nombre_raw(archivo)
+    tarea = metadata.task
 
+    # Se aplica el filtrado a todos los trials del archivo .mat y se guardan
     if tarea == "Restin":
-        for i_trial in range(data.number_trials):
-            df = data.get_df_trial(i_trial, CANALES_VALIDOS)
+        for trial_id in range(data.number_trials):
+            metadata.trial_id= str(trial_id)
+            df = data.get_df_trial(trial_id, CANALES_VALIDOS)
             df_filtrado = aplicar_filtro_broadband(df)
-            guardar_parquet(df=df_filtrado, nombre_archivo=archivo, subfijo_proceso="preproc", trial_id=i_trial, path_save=path_sujeto_guardar)
+            guardar_procesamiento_parquet(df= df_filtrado,
+                                    path_archivo=path_archivo,
+                                    subfijo_proceso= "filter",
+                                    metadata= metadata, 
+                                    path_save=path_sujeto_guardar,
+                                    )
 
     elif tarea in {"Wrkmem", "Motort"}:
-        for i_trial, type_task, df_valido in obtener_trials_validos(data, canales=CANALES_VALIDOS):
+        for trial_id, type_task, df_valido in obtener_trials_validos(data, canales=CANALES_VALIDOS):
+            metadata.trial_id= trial_id
+            metadata.type_task= type_task
             df_filtrado = aplicar_filtro_broadband(df_valido)
-            guardar_parquet(df=df_filtrado, nombre_archivo=archivo, subfijo_proceso=f"{type_task}_preproc", trial_id=i_trial, path_save=path_sujeto_guardar)
+            guardar_procesamiento_parquet(df= df_filtrado,
+                                    path_archivo=path_archivo,
+                                    subfijo_proceso= "filter",
+                                    metadata= metadata, 
+                                    path_save=path_sujeto_guardar,
+                                    )
+            
+def filtrar_sujeto_pipeline(sujeto: str, input_data_dir: Path, output_data_dir: Path) -> str:
+    """Filtra todos los archivos .mat asociados a un sujeto.
 
-
-def procesar_sujeto(sujeto: str, data_raw_dir: Path, data_intermediate_dir: Path) -> str:
-    """Administra y procesa la totalidad de archivos asociados a un sujeto.
-
-    Crea el directorio de salida intermedio para el sujeto especificado, localiza 
-    todos los archivos válidos dentro de su carpeta de origen y los envía de manera 
-    secuencial a la función de procesamiento de archivos.
+    Crea el directorio de salida correspondiente al sujeto, localiza todos
+    los archivos con extensión `.mat` dentro de su carpeta de origen y aplica
+    secuencialmente el proceso de filtrado a cada uno de ellos.
 
     Args:
-        sujeto: Identificador numérico o alfanumérico del sujeto (e.g., '105923').
-        data_raw_dir: Objeto `Path` que apunta al directorio raíz de los datos raw.
-        data_intermediate_dir: Objeto `Path` que apunta al directorio raíz donde 
-          se guarda la estructura de datos procesados.
+        sujeto: Identificador único del sujeto cuyos archivos serán procesados.
+        input_data_dir: Directorio raíz que contiene las carpetas de entrada
+            organizadas por sujeto.
+        output_data_dir: Directorio raíz donde se almacenarán los archivos filtrados.
 
     Returns:
-        Un mensaje en cadena de texto (str) indicando el éxito de la operación 
-        junto con el ID del sujeto finalizado.
+        Mensaje indicando que el procesamiento del sujeto ha finalizado
+        correctamente.
     """
-    path_sujeto = data_raw_dir / sujeto
-    path_sujeto_guardar = data_intermediate_dir / sujeto
+    path_sujeto = input_data_dir / sujeto
+    path_sujeto_guardar = output_data_dir / sujeto
     path_sujeto_guardar.mkdir(parents=True, exist_ok=True)
 
-    archivos = [p for p in path_sujeto.iterdir() if p.is_file()]
+    archivos = path_sujeto.glob("*.mat")
+
     for archivo in archivos:
-        procesar_archivo(archivo, path_sujeto_guardar)
+        filtrar_archivo(archivo, path_sujeto_guardar)
 
     return f"Sujeto {sujeto} finalizado."
