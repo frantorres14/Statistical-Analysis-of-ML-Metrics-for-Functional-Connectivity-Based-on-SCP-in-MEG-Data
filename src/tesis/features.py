@@ -106,7 +106,6 @@ def corr_matrix_to_vector(corr_matrix: pd.DataFrame) -> pd.Series:
     return serie
 
 
-
 def vectores_corr_pipeline(sujeto: str, input_data_dir: Path, output_data_dir: Path) -> str:
     """Genera un conjunto de vectores de correlación para un sujeto.
 
@@ -128,9 +127,9 @@ def vectores_corr_pipeline(sujeto: str, input_data_dir: Path, output_data_dir: P
         correctamente.
     """
     # Se crean los paths para leer por sujeto y guardar
-    path_sujeto = input_data_dir / sujeto
-    output_data_dir.mkdir(parents= True, exist_ok= True)
-    path_guardar = output_data_dir / f"{sujeto}_vector_corr_dataset.parquet"
+    path_sujeto= input_data_dir / sujeto 
+    path_sujeto_guardar = output_data_dir / sujeto
+    path_sujeto_guardar.mkdir(parents= True, exist_ok= True)
 
     # Se obtienen todos los archivos en esa carpeta
     archivos = path_sujeto.glob("*.parquet")
@@ -153,7 +152,9 @@ def vectores_corr_pipeline(sujeto: str, input_data_dir: Path, output_data_dir: P
     
     # Se convierte en un solo pd.DataFrame todos los vectores de la lista
     df = pd.DataFrame(lista_dict)
-    df.to_parquet(path_guardar, index= True)
+
+    path_guardar = path_sujeto_guardar / f"{sujeto}_vector_corr_dataset.parquet"
+    df.to_parquet(path_guardar, index=False)
 
     return f"Sujeto {sujeto} finalizado."
 
@@ -346,15 +347,70 @@ def diff_matrices_pipeline(sujeto: str, corr_matrices_dir: Path, scp_dir: Path, 
         # obtenida de los metadatos y se guarda como un archivo parquet
         for nombre_scp, scp in scps:
             diff = matriz_diferencia(corr_matrix=corr_matrix,scp=scp)
+            path_diff_guardar= path_sujeto_guardar / nombre_scp
+            path_diff_guardar.mkdir(parents= True, exist_ok= True)
 
             guardar_procesamiento_parquet(
                 df=diff,
                 path_archivo=archivo,
                 subfijo_proceso=f"{nombre_scp}_diff",
                 metadata=metadata,
-                path_save=path_sujeto_guardar,
+                path_save=path_diff_guardar,
             )
             
+    return f"Sujeto {sujeto} finalizado."
+
+
+def vectores_diff_pipeline(sujeto: str, input_data_dir: Path, output_data_dir: Path) -> str:
+    """Genera un conjunto de vectores de diferencia para un sujeto.
+
+    Lee todas las matrices de diferencia almacenadas en formato Parquet para
+    un sujeto determinado, transforma cada matriz en su representación
+    vectorizada, incorpora los metadatos asociados al archivo original y
+    consolida toda la información en un único DataFrame. El resultado se
+    almacena como un archivo Parquet en el directorio de salida del sujeto.
+
+    Args:
+        sujeto: Identificador único del sujeto cuyos datos serán procesados.
+        input_data_dir: Directorio raíz que contiene las carpetas de entrada
+            organizadas por sujeto.
+        output_data_dir: Directorio raíz donde se almacenarán los resultados
+            generados.
+
+    Returns:
+        Mensaje indicando que el procesamiento del sujeto ha finalizado
+        correctamente.
+    """
+    # Se crean los paths para leer por sujeto y guardar
+    path_sujeto= input_data_dir / sujeto 
+    path_sujeto_guardar = output_data_dir / sujeto
+    path_sujeto_guardar.mkdir(parents= True, exist_ok= True)
+
+    for type_ref in ["tim-tfla", "tresp-temg"]:
+        # Se obtienen todos los archivos en esa carpeta
+        path_matrices= path_sujeto / type_ref
+        archivos = path_matrices.glob("*.parquet")
+
+        lista_dict= []
+
+        for archivo in archivos:
+            # Se leen las matrices de correlación y se convierten en vectores
+            df_matrix= pd.read_parquet(archivo)
+            vector = corr_matrix_to_vector(df_matrix)
+            # Se obtienen los metadatos de ese archivo y se pasan a un diccionario
+            metadata_obj = obtener_metadatos_parquet(archivo)
+            metadata_dict = asdict(metadata_obj)
+            # El vector pasa de formato pd.Serie a diccionario
+            vector_dict = vector.to_dict()
+            # Se crea un solo vector con los metadatos y los valores del vector de correlación
+            fila_completa = metadata_dict | vector_dict
+            # Se agrega ese vector a una lista
+            lista_dict.append(fila_completa)
+        
+        # Se convierte en un solo pd.DataFrame todos los vectores de la lista
+        df = pd.DataFrame(lista_dict)
+        path_guardar = path_sujeto_guardar / f"{sujeto}_vector_diff_{type_ref}_dataset.parquet"
+        df.to_parquet(path_guardar, index=False)
     return f"Sujeto {sujeto} finalizado."
 
 

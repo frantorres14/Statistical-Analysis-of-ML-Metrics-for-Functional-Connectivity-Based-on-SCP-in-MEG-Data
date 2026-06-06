@@ -1,12 +1,12 @@
 """Pipeline de procesamiento en paralelo para datos de matrices de 
-correlación a un dataset de vectores de correlación.
+diferencia a un dataset de vectores de diferencia.
 
 Este script expone una interfaz de línea de comandos (CLI) para orquestar
 la generación de matrices de correlación de múltiples sujetos de manera
 concurrente utilizando un pool de procesos distribuidos.
 
 Ejemplo de uso:
-    $ uv run /scripts/corr_to_dataset_pipeline.py --input-dir /data/intermediate_data/correlation_matrices --output-dir /data/intermediate_data/vector_corr_dataset
+    $ uv run /scripts/diff_to_dataset_pipeline.py --input-dir /data/intermediate_data/diff_matrices --output-dir /data/intermediate_data/vector_diff_datasets
 """
 
 import argparse
@@ -14,7 +14,7 @@ import multiprocessing as mp
 from pathlib import Path
 import time
 from tesis.tools import procesamiento_paralelo_por_sujeto
-from tesis.features import vectores_corr_pipeline
+from tesis.features import vectores_diff_pipeline
 
 
 def parse_args() -> argparse.Namespace:
@@ -27,13 +27,13 @@ def parse_args() -> argparse.Namespace:
             - workers (int): Número de procesos paralelos a ejecutar.
     """
     parser = argparse.ArgumentParser(
-        description="Pipeline de transformacion de matrices de correlacion a un dataset de vectores de correlación"
+        description="Pipeline de transformacion de matrices de diferencia a un dataset de vectores de diferencia"
     )
     parser.add_argument(
         "--input-dir",
         type=Path,
         required=True,
-        help="Directorio de origen (matrices de correlación)",
+        help="Directorio de origen (matrices de diferencia)",
     )
     parser.add_argument(
         "--output-dir",
@@ -67,7 +67,7 @@ def main() -> None:
     print(f"Workers activos: {args.workers}")
 
     procesamiento_paralelo_por_sujeto(lista_sujetos= lista_sujetos,
-                                      funcion_sujeto= vectores_corr_pipeline,
+                                      funcion_sujeto= vectores_diff_pipeline,
                                       workers= args.workers,
                                       paths=(args.input_dir, args.output_dir),
                                       )
