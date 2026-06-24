@@ -9,6 +9,7 @@ models/
 
 # --- Carpetas temporales y de experimentación ---
 sandbox/
+docs/
 
 # --- Archivos generados por Python ---
 **/__pycache__/

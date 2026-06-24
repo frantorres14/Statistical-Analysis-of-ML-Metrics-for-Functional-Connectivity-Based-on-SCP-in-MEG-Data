@@ -101,7 +101,7 @@ def corr_matrix_to_vector(corr_matrix: pd.DataFrame) -> pd.Series:
     
     # Extraer valores usando los mismos índices y se guarda como pd.Series
     valores = corr_matrix.values[row_indices, col_indices]
-    serie = pd.Series(data=valores, index=pair_names, name='correlation', dtype=float)
+    serie = pd.Series(data=valores, index=pair_names, name='valores', dtype=float)
     
     return serie
 
@@ -412,6 +412,41 @@ def vectores_diff_pipeline(sujeto: str, input_data_dir: Path, output_data_dir: P
         path_guardar = path_sujeto_guardar / f"{sujeto}_vector_diff_{type_ref}_dataset.parquet"
         df.to_parquet(path_guardar, index=False)
     return f"Sujeto {sujeto} finalizado."
+
+
+def correlation_vector_type_ref(df: pd.DataFrame, type_ref: str) -> np.ndarray:
+    """Extrae y aplana los valores de correlación para una referencia específica.
+
+    Filtra el DataFrame dado buscando una referencia en particular dentro de 
+    la columna 'type_ref'. Luego, selecciona únicamente las columnas de tipo 
+    numérico (float64) y devuelve todos sus valores como un único vector 
+    unidimensional (aplanado).
+
+    Args:
+        df (pd.DataFrame): El DataFrame principal que contiene los datos. 
+            Debe incluir una columna llamada 'type_ref' y columnas de 
+            tipo float64.
+        type_ref (str): El nombre exacto de la referencia que se desea 
+            filtrar (por ejemplo, "TIM", "TRESP", "TFLA").
+
+    Returns:
+        np.ndarray: Un vector (array de numpy 1D) con todos los valores de 
+        las columnas float64 correspondientes a la referencia indicada. Si la 
+        referencia no se encuentra en el DataFrame, devolverá un array vacío.
+
+    Raises:
+        KeyError: Si la columna 'type_ref' no existe en el DataFrame original.
+    """
+    if "type_ref" not in df.columns:
+        raise KeyError("El DataFrame debe contener una columna llamada 'type_ref'.")
+
+    # Se filtran los datos para la referencia específica
+    df_filtered = df[df["type_ref"] == type_ref]
+
+    # Se seleccionan sólo los valores de correlación (columnas float64)
+    df_floats = df_filtered.select_dtypes(include=["float64"])
+
+    return df_floats.values.flatten()
 
 
 def matrices_promediadas_por_tarea(sujeto: str, input_data_dir: Path, output_data_dir: Path) -> str:

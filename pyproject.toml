@@ -33,6 +33,11 @@ dependencies = [
     "ipython>=8.0.0",
     "scikit-learn>=1.2.0",
     "pyarrow>=21.0.0",
+    "xgboost",
+    "polars",
+    "lightgbm",
+    "optuna",
+    "optuna-integration"
 ]
 
 [project.optional-dependencies]
