@@ -75,18 +75,19 @@ class DataHCP:
         """
         return self._raw_data["trialinfo"][0][0]
 
-    def get_df_trial(self, i_trial: int, canales: Optional[List[str]] = None) -> pd.DataFrame:
+    def get_df_trial(self, i_trial: int, canales: Optional[List[str]] = None, time = False) -> pd.DataFrame:
         """
         Genera un DataFrame de Pandas para un ensayo específico.
         Args:
             i_trial (int): Índice del ensayo (0 a n-1).
             canales (list, optional): Lista de nombres de canales a incluir. 
                 Si es None, se incluyen todos los canales.
+            time (bool): Opción para incluir la columna de tiempo.
         Returns:
             pd.DataFrame: DataFrame con el tiempo como índice (opcional) y canales en columnas.
         """
         trial_data = self._raw_data[0,0]["trial"][0][i_trial]
-        # tiempo = np.ravel(self._raw_data[0,0]["time"][0][i_trial]) # Reservado para uso futuro
+        tiempo = np.ravel(self._raw_data[0,0]["time"][0][i_trial]) if time == True else None
 
         if canales:
             # Localizar índices de canales específicos
@@ -97,7 +98,11 @@ class DataHCP:
             data_subset = trial_data
             column_names = self._labels
 
-        df = pd.DataFrame(data_subset, index=column_names).T
+        if time:
+            df = pd.DataFrame(data_subset, index=column_names).T
+            df.insert(0, "time", tiempo)
+        else:
+            df = pd.DataFrame(data_subset, index=column_names).T
         return df
 
     def plot_trial(
@@ -447,7 +452,8 @@ def filtrar_archivo(path_archivo: Path, path_sujeto_guardar: Path) -> None:
             metadata.trial_id= trial_id
             metadata.type_task= type_task
             df_filtrado = aplicar_filtro_broadband(df_valido)
-            guardar_procesamiento_parquet(df= df_filtrado,
+            guardar_procesamiento_parquet(
+                                    df= df_filtrado,
                                     path_archivo=path_archivo,
                                     subfijo_proceso= "filter",
                                     metadata= metadata, 

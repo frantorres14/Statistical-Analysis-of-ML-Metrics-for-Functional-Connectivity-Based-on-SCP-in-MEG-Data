@@ -3,7 +3,8 @@ import pandas as pd
 from tesis.tools import guardar_procesamiento_parquet, obtener_metadatos_parquet
 import numpy as np
 from dataclasses import asdict
-
+import glob
+from typing import Optional, Dict, List
 
 def guardar_matriz_correlacion(path_archivo: Path, path_output: Path) -> None:
     """Genera una matriz de correlación y la guarda en formato Parquet.
@@ -456,3 +457,125 @@ def matrices_promediadas_por_tarea(sujeto: str, input_data_dir: Path, output_dat
     path_sujeto = input_data_dir / sujeto
     path_sujeto_guardar = output_data_dir / sujeto
     path_sujeto_guardar.mkdir(parents=True, exist_ok=True)
+
+
+def dataset_corr_pipeline(
+    ruta_archivos: str,
+    mapeo_clases: Optional[Dict[str, int]] = None,
+    columnas_eliminar: Optional[List[str]] = None,
+    type_ref_elegidos: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
+    """Carga y procesa múltiples archivos Parquet aplicando transformaciones y limpieza para crear el
+    dataset para el entrenamiento de los modelos.
+
+    Busca todos los archivos Parquet en la ruta especificada (incluyendo subcarpetas), los concatena
+    en un único DataFrame de Pandas, crea una columna objetivo ('target') basada en un diccionario de mapeo,
+    reduce la precisión de las columnas flotantes a float32 para optimizar el uso de memoria y 
+    elimina las columnas innecesarias.
+
+    Args:
+        ruta_archivos (str): Patrón de ruta con comodines (ej. '**/*.parquet')
+            para localizar los archivos de forma recursiva.
+        dict_classes (dict): Diccionario de mapeo para transformar los valores
+            de 'type_task' en identificadores numéricos.
+        columnas_a_borrar (list): Lista con los nombres de las columnas que
+            se van a eliminar del DataFrame final.
+        type_ref_elegido (list): Tipo de referencias elegidas de la columna
+            "type_ref". Para la tarea "Restin" se elige la palabra "Restin"
+
+    Returns:
+        pd.DataFrame: El DataFrame de Pandas completamente procesado y optimizado.
+
+    Raises:
+        ValueError: Si no se encuentra ningún archivo Parquet en la ruta provista.
+    """
+    # Asignar valores por defecto si no se pasaron argumentos personalizados
+    if mapeo_clases is None:
+        mapeo_clases = {"0-back": 0, "R-hand": 1, "R-foot": 2, "Restin": 3, "L-hand": 4, "L-foot": 5, "2-back": 6}
+
+    if columnas_eliminar is None:
+        columnas_eliminar = ["run", "task", "trial_id", "type_task", "type_ref", "process", "instrumento", "preproc_base"]
+
+    if type_ref_elegidos is None:
+        type_ref_elegidos = ["Restin", "TIM", "TFLA"]
+    
+    # Encontrar todos los archivos Parquet en las subcarpetas
+    ruta_archivos = Path(ruta_archivos)
+    archivos = list(ruta_archivos.rglob("*.parquet"))
+
+    if not archivos:
+        raise ValueError(f"No se encontraron archivos Parquet en la ruta: {ruta_archivos}")
+
+    # Leer y concatenar todos los archivos en un solo DataFrame
+    df = pd.concat((pd.read_parquet(archivo) for archivo in archivos), ignore_index=True)
+
+    # Identificar las columnas de tipo float64 para reducir su precisión
+    float_cols = df.select_dtypes(include=["float64"]).columns
+
+    # Se rellenan los valores vacíos para poder hacer la selección del tipo de referencia
+    df = df[df["type_ref"].fillna("Restin").isin(type_ref_elegidos)]
+
+    # Aplicar el pipeline de transformación y limpieza de datos
+    df = (df.assign(target=lambda x: x["type_task"].fillna("Restin").map(mapeo_clases).astype("Int64"))
+        .astype({col: "float32" for col in float_cols}).drop(columns=columnas_eliminar))
+    
+    return df
+
+
+def dataset_diff_pipeline(
+    ruta_archivos: str,
+    mapeo_clases: Optional[Dict[str, int]] = None,
+    columnas_eliminar: Optional[List[str]] = None,
+    type_ref_elegidos: str = None,
+    ) -> pd.DataFrame:
+    """Carga y procesa múltiples archivos Parquet aplicando transformaciones y limpieza para crear el
+    dataset para el entrenamiento de los modelos.
+
+    Busca todos los archivos Parquet en la ruta especificada (incluyendo subcarpetas), los concatena
+    en un único DataFrame de Pandas, crea una columna objetivo ('target') basada en un diccionario de mapeo,
+    reduce la precisión de las columnas flotantes a float32 para optimizar el uso de memoria y 
+    elimina las columnas innecesarias.
+
+    Args:
+        ruta_archivos (str): Patrón de ruta con comodines (ej. '**/*.parquet')
+            para localizar los archivos de forma recursiva.
+        dict_classes (dict): Diccionario de mapeo para transformar los valores
+            de 'type_task' en identificadores numéricos.
+        columnas_a_borrar (list): Lista con los nombres de las columnas que
+            se van a eliminar del DataFrame final.
+        type_ref_elegido (str): Tipo de referencias elegidas 
+
+    Returns:
+        pd.DataFrame: El DataFrame de Pandas completamente procesado y optimizado.
+
+    Raises:
+        ValueError: Si no se encuentra ningún archivo Parquet en la ruta provista.
+    """
+    # Asignar valores por defecto si no se pasaron argumentos personalizados
+    if mapeo_clases is None:
+        mapeo_clases = {"0-back": 0, "R-hand": 1, "R-foot": 2, "Restin": 3, "L-hand": 4, "L-foot": 5, "2-back": 6}
+
+    if columnas_eliminar is None:
+        columnas_eliminar = ["run", "task", "trial_id", "type_task", "type_ref", "process", "instrumento", "preproc_base"]
+
+    if type_ref_elegidos is None:
+        type_ref_elegidos = "tim-tfla"
+    
+    # Encontrar todos los archivos Parquet en las subcarpetas
+    ruta_archivos = Path(ruta_archivos)
+    archivos = list(ruta_archivos.rglob("*.parquet"))
+    
+    if not archivos:
+        raise ValueError(f"No se encontraron archivos Parquet en la ruta: {ruta_archivos}")
+
+    # Leer y concatenar todos los archivos en un solo DataFrame
+    df = pd.concat((pd.read_parquet(archivo) for archivo in archivos if type_ref_elegidos in str(archivo)), ignore_index=True)
+
+    # Identificar las columnas de tipo float64 para reducir su precisión
+    float_cols = df.select_dtypes(include=["float64"]).columns
+
+    # Aplicar el pipeline de transformación y limpieza de datos
+    df = (df.assign(target=lambda x: x["type_task"].fillna("Restin").map(mapeo_clases).astype("Int64"))
+        .astype({col: "float32" for col in float_cols}).drop(columns=columnas_eliminar))
+    
+    return df
