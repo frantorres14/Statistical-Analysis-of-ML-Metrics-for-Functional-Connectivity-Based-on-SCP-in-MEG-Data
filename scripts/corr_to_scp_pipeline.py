@@ -4,7 +4,7 @@ la generación de matrices SCP de múltiples sujetos de manera
 concurrente utilizando un pool de procesos distribuidos.
 
 Ejemplo de uso:
-    $ uv run /scripts/corr_to_scp_pipeline.py --input-dir /data/intermediate_data/correlation_matrices --output-dir /data/intermediate_data/scp
+    $ uv run scripts/corr_to_scp_pipeline.py --input-dir data/intermediate_data/correlation_matrices --output-dir data/intermediate_data/scp
 """
 
 import argparse

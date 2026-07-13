@@ -4,7 +4,7 @@ la generación de matrices de diferencia de múltiples sujetos de manera
 concurrente utilizando un pool de procesos distribuidos.
 
 Ejemplo de uso:
-    $ uv run /scripts/corr_to_diff_pipeline.py --corr-dir /data/intermediate_data/correlation_matrices --scp-dir /data/intermediate_data/scp --output-dir /data/intermediate_data/diff_matrices
+    $ uv run scripts/corr_to_diff_pipeline.py --corr-dir data/intermediate_data/correlation_matrices --scp-dir data/intermediate_data/scp --output-dir /data/intermediate_data/diff_matrices
 """
 
 import argparse

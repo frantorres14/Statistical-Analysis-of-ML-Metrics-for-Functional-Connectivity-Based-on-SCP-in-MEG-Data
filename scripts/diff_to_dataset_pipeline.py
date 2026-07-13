@@ -6,7 +6,7 @@ la generación de matrices de correlación de múltiples sujetos de manera
 concurrente utilizando un pool de procesos distribuidos.
 
 Ejemplo de uso:
-    $ uv run /scripts/diff_to_dataset_pipeline.py --input-dir /data/intermediate_data/diff_matrices --output-dir /data/intermediate_data/vector_diff_datasets
+    $ uv run scripts/diff_to_dataset_pipeline.py --input-dir data/intermediate_data/diff_matrices --output-dir data/intermediate_data/vector_diff_datasets
 """
 
 import argparse

@@ -5,7 +5,7 @@ el preprocesamiento de múltiples sujetos de manera concurrente utilizando
 un pool de procesos distribuidos.
 
 Ejemplo de uso:
-    $ uv run scripts/filter_trial_pipeline.py --raw-dir ./data/raw_data --intermediate-dir ./data/intermediate_data/filtered_data
+    $ uv run scripts/filter_trial_pipeline.py --input-dir ./data/raw_data --output-dir ./data/intermediate_data/filtered_data --workers 8
 """
 
 import argparse

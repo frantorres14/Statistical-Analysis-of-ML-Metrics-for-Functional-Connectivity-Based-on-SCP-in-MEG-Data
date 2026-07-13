@@ -255,8 +255,10 @@ def obtener_trials_validos(data_hcp: DataHCP, canales: Optional[List[str]] = Non
     trials_validos = np.where(mask)[0]
     
     for trial in trials_validos:
-        df_trial = data_hcp.get_df_trial(i_trial=trial, canales= canales)
-        task_type = task_type_map[info[trial, task_type_col]]
+        df_trial = data_hcp.get_df_trial(i_trial=trial, canales= canales, time= True)
+        df_trial = df_trial[df_trial["time"] > 0] # Se obtienen solo los valores donde empieza el trial
+        df_trial.reset_index(drop=True, inplace=True)  # reiniciar indices
+        task_type = task_type_map[info[trial, task_type_col]] # Se obtuiene el tipo de tarea
         yield str(trial), task_type, df_trial
 
 
@@ -438,7 +440,10 @@ def filtrar_archivo(path_archivo: Path, path_sujeto_guardar: Path) -> None:
     if tarea == "Restin":
         for trial_id in range(data.number_trials):
             metadata.trial_id= str(trial_id)
-            df = data.get_df_trial(trial_id, CANALES_VALIDOS)
+            df = data.get_df_trial(i_trial=trial_id, canales=CANALES_VALIDOS, time= True)
+            df = df[df["time"] > 0] # Se obtienen solo los valores donde empieza el trial
+            df.reset_index(drop=True, inplace=True)
+            df = df.drop(columns= ["time"])
             df_filtrado = aplicar_filtro_broadband(df)
             guardar_procesamiento_parquet(df= df_filtrado,
                                     path_archivo=path_archivo,
@@ -449,6 +454,7 @@ def filtrar_archivo(path_archivo: Path, path_sujeto_guardar: Path) -> None:
 
     elif tarea in {"Wrkmem", "Motort"}:
         for trial_id, type_task, df_valido in obtener_trials_validos(data, canales=CANALES_VALIDOS):
+            df_valido = df_valido.drop(columns= ["time"])
             metadata.trial_id= trial_id
             metadata.type_task= type_task
             df_filtrado = aplicar_filtro_broadband(df_valido)
