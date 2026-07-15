@@ -1,11 +1,10 @@
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.decomposition import PCA
-import pandas as pd
-import wandb
 from sklearn.model_selection import GroupKFold, GridSearchCV, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from tesis.evaluate import evaluate_and_log_fold
+import wandb
 
 def load_and_split_data(filepath: str) -> tuple:
     """Carga el dataset particionado y separa las características, la variable objetivo y los grupos.
@@ -87,8 +86,7 @@ def run_nested_cv(X: pd.DataFrame,
             config={
                 "model": model_name,
                 "fold": fold + 1,
-                "search_type": search_type,
-                **raw_params
+                "search_type": search_type
             }
         )
         
@@ -120,17 +118,21 @@ def run_nested_cv(X: pd.DataFrame,
         
         best_model = search.best_estimator_
         y_pred = best_model.predict(X_test)
+
+        best_params = {k.replace('clf__', ''): v for k, v in search.best_params_.items()}
+        
+        wandb.config.update(best_params)
         
         test_score = evaluate_and_log_fold(
             fold=fold + 1,
             y_true=y_test,
             y_pred=y_pred,
             groups_test=groups_test,
-            best_params=search.best_params_
+            best_params=best_params 
         )
         
         outer_scores.append(test_score)
-        print(f"Fold {fold + 1}/{n_outer} | Mejores params: {search.best_params_} | Score: {test_score:.4f}")
+        print(f"Fold {fold + 1}/{n_outer} | Mejores params: {best_params} | Score: {test_score:.4f}")
         
         wandb.finish()
         

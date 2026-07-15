@@ -23,9 +23,6 @@ def evaluate_and_log_fold(fold: int, y_true: pd.Series, y_pred: np.ndarray, grou
         "fold": fold,
         "outer_fold_accuracy": test_score
     }
-    
-    for param_name, param_value in best_params.items():
-        log_metrics[f"best_{param_name}"] = param_value
         
     for g in groups_test.unique():
         mask = (groups_test == g)

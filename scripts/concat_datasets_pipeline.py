@@ -37,6 +37,10 @@ def limpiar_dataset(df: pd.DataFrame) -> pd.DataFrame:
     columnas_a_eliminar = ["run", "task", "trial_id", "type_task", "type_ref", "process", "instrumento", "preproc_base"]
     df = df.drop(columns=columnas_a_eliminar)
 
+    # Se convierten los datos numéricos a tipo float32 para reducir el uso de memoria
+    columnas_numericas = df.select_dtypes(include=["number"]).columns
+    df[columnas_numericas] = df[columnas_numericas].astype("float32")
+
     return df
 
 
@@ -44,7 +48,7 @@ def obtener_parquets(carpeta: Path, dataset_type: str) -> List[Path]:
     """
     Obtiene los parquets válidos dependiendo del tipo de dataset.
     """
-    archivos = carpeta.glob("*.parquet")
+    archivos = list(carpeta.glob("*.parquet"))
 
     if dataset_type == "corr":
         return archivos
