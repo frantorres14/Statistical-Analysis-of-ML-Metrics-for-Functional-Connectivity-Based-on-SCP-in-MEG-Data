@@ -103,7 +103,7 @@ def run_nested_cv(X: pd.DataFrame,
                 param_distributions=param_grid,
                 n_iter=n_iter,
                 cv=cv_inner,
-                scoring='log_loss',
+                scoring='neg_log_loss',
                 n_jobs=n_jobs,
                 random_state=714
             )
@@ -112,7 +112,7 @@ def run_nested_cv(X: pd.DataFrame,
                 estimator=pipeline,
                 param_grid=param_grid,
                 cv=cv_inner,
-                scoring='log_loss',
+                scoring='neg_log_loss',
                 n_jobs=n_jobs
             )
         

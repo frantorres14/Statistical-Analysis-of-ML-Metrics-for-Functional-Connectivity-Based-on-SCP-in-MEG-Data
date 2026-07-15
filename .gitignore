@@ -21,3 +21,6 @@ dist/
 
 # --- Archivos generados por Jupyter ---
 .ipynb_checkpoints/
+
+# --- Logs de WandB
+wand/
