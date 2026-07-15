@@ -49,11 +49,11 @@ def run_nested_cv(X: pd.DataFrame,
                   pipeline: Pipeline,
                   param_grid: dict,
                   model_name:str,
-                  raw_params: dict,
                   search_type: str = "random",
                   n_iter: int = 60,
                   n_outer: int = 6,
                   n_inner: int = 5,
+                  data_name: str = "dataset",
                   n_jobs: int = 1) -> list:
     """Ejecuta validación cruzada anidada soportando Grid Search y Random Search dinámicamente.
 
@@ -82,7 +82,7 @@ def run_nested_cv(X: pd.DataFrame,
         wandb.init(
             project="tesis_hcp",
             group=f"NestedCV_{model_name}", 
-            name=f"{model_name}_Fold_{fold + 1}",
+            name=f"{model_name}_Fold_{fold + 1}_{data_name}",
             config={
                 "model": model_name,
                 "fold": fold + 1,

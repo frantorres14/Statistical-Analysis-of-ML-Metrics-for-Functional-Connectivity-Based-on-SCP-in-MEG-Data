@@ -12,6 +12,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--data_path", type=str, help="Ruta al archivo de datos")
     parser.add_argument("--model", type=str, required=True, help="Nombre del modelo")
     parser.add_argument("--search_type", type=str, required=True, choices=["grid", "random"], help="Tipo de búsqueda de hiperparámetros")
+    parser.add_argument("--n_jobs", type=int, default=1, help="Número de trabajos en paralelo para la búsqueda de hiperparámetros")
 
     return parser.parse_args()
 
@@ -31,6 +32,8 @@ def main():
     
     pipeline_params = {f"clf__{key}": value for key, value in raw_params.items()}
     pipeline = build_pipeline(estimator=estimator)
+
+    data_name = filepath.split("/")[-1].replace(".parquet", "")
     
     outer_scores = run_nested_cv(
         X=X, 
@@ -40,7 +43,9 @@ def main():
         param_grid=pipeline_params,
         model_name=model_name,
         raw_params=raw_params,
-        search_type=args.search_type
+        data_name=data_name,
+        n_jobs=args.n_jobs,
+
     )
     
     print_summary(outer_scores)
