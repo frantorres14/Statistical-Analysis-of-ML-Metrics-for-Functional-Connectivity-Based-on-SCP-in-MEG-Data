@@ -30,8 +30,11 @@ def limpiar_dataset(df: pd.DataFrame) -> pd.DataFrame:
     # Se filtran los registros para mantener solo aquellos con 'type_ref' en {"Restin", "TIM", "TFLA"}
     df = df.loc[df["type_ref"].isin({"Restin", "TIM", "TFLA"})].copy()
 
+    # Se crea la columna 'target' basada en la columna 'type_task'
+    mapeo = {"0-back": 0, "R-hand": 1, "R-foot": 2, "Restin": 3, "L-hand": 4, "L-foot": 5, "2-back": 6}
+    df["target"] = df["type_task"].map(mapeo)
     # Se eliminan las columnas que no son necesarias para el entrenamiento
-    columnas_a_eliminar = ["run", "task", "trial_id", "type_ref", "process", "instrumento", "preproc_base"]
+    columnas_a_eliminar = ["run", "task", "trial_id", "type_task", "type_ref", "process", "instrumento", "preproc_base"]
     df = df.drop(columns=columnas_a_eliminar)
 
     return df
@@ -61,7 +64,7 @@ def procesar_carpetas(input_dir: Path,dataset_type: str) -> pd.DataFrame:
         raise FileNotFoundError(f"No existe {input_dir}")
 
     # Se obtienen y ordenan las carpetas dentro del directorio de entrada
-    carpetas = [carpeta for carpeta in input_dir.iterdir() if carpeta.is_dir()]
+    carpetas = sorted(carpeta for carpeta in input_dir.iterdir() if carpeta.is_dir())
 
     dfs = []
 
