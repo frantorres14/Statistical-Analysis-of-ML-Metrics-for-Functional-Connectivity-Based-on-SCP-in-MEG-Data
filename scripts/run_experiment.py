@@ -40,10 +40,11 @@ def main():
         param_grid=pipeline_params,
         model_name=model_name,
         raw_params=raw_params,
+        search_type=args.search_type
     )
     
     print_summary(outer_scores)
 
 if __name__ == "__main__":
     main()
-# Comando para correrlo: uv run scripts/run_experiments.py --data_path "data/processed/HCP_corr_dataset.parquet" --model "LogisticRegression" --search_type "grid"
+# Comando para correrlo: uv run scripts/run_experiment.py --data_path "data/processed/HCP_corr_dataset.parquet" --model "LogisticRegression" --search_type "grid"
