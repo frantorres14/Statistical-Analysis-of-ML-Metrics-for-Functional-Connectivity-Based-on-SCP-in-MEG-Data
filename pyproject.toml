@@ -34,10 +34,8 @@ dependencies = [
     "scikit-learn>=1.2.0",
     "pyarrow>=21.0.0",
     "xgboost",
-    "polars",
-    "lightgbm",
-    "optuna",
-    "optuna-integration"
+    "wandb>=0.16.0",
+    "python-dotenv>=1.0.0"
 ]
 
 [project.optional-dependencies]

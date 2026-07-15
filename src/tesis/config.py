@@ -1,4 +1,8 @@
 from pathlib import Path
+from scipy.stats import randint, uniform, loguniform
+from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
+
 
 # --- RUTAS DE DIRECTORIOS ---
 # Esto encuentra la raíz del proyecto dinámicamente
@@ -42,3 +46,55 @@ COLUMNAS_TRIALINFO_WRKMEM= [
     "prev_resp_duration", "prev_is_first_block", "prev_is_last_block", "press_on_onset", "has_trial_nans"
 ]
 
+# --- HIPERPARAMETROS DE LOS MODELOS
+XGBOOST_HIPERPARAMETERS = {
+    "eta": [0.005, 0.01, 0.02, 0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3],
+    "max_depth": [3, 4, 5, 6, 7, 8, 9, 10, 12],
+    "min_child_weight": [1, 2, 3, 5, 7, 10, 15, 20],
+    "gamma": [0, 0.1, 0.3, 0.5, 1, 2, 3, 5, 10],
+    "subsample": [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+    "colsample_bytree": [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+    "reg_alpha": [0, 0.01, 0.1, 0.5, 1, 2, 5, 10],
+    "reg_lambda": [0.1, 0.5, 1, 2,5, 10, 20, 50]
+}
+
+
+configs_models = {
+    "XGBoost": {
+        "estimator":XGBClassifier,
+        "search_type":"random",
+        "params": {
+            "n_estimators":[1000],
+            "objective":["multi:softprob"], 
+            "num_class":[7],
+            "eval_metric":["mlogloss"],
+            "eta": loguniform(1e-3, 3e-1),
+            "max_depth": randint(3, 13),
+            "min_child_weight": randint(1, 21),
+            "gamma": uniform(0, 10),
+            "subsample": uniform(0.5, 0.5),
+            "colsample_bytree": uniform(0.4, 0.6),
+            "reg_alpha": loguniform(1e-3, 10),
+            "reg_lambda": loguniform(1e-1, 50),
+        }
+    },
+    "LogisticRegression":{
+        "estimator":LogisticRegression,
+        "search_type":"grid",
+        "params":{
+            "random_state":[714],
+            "solver":["lbfgs"],
+            "max_iter":[2000],
+            "C":[0.01, 0.1, 1, 10, 100]
+        }
+    }
+}
+"""
+VALORES DE HIPERPARAMETROS POR DEFECTO para XGboost
+"booster":"gbtree",
+"tree_metod":"auto",
+"colsample_bylevel":1.0,
+"colsample_bynode":1.0,
+"scale_pos_weight":1.0,
+"max_delta_step":0
+"""
