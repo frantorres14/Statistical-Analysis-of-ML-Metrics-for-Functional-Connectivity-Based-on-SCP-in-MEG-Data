@@ -42,6 +42,7 @@ def main():
         pipeline=pipeline, 
         param_grid=pipeline_params,
         model_name=model_name,
+        search_type=args.search_type,
         data_name=data_name,
         n_jobs=args.n_jobs
     )
