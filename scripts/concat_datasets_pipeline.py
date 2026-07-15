@@ -1,3 +1,12 @@
+"""
+Este script expone una interfaz de línea de comandos (CLI) para poder
+concatenar múltples dataset en uno solo, aplicando una limpieza de datos 
+a los datasets para prepararlos para entrenamiento.
+
+Ejemplo de uso:
+    $ uv run scripts/concat_datasets_pipeline.py --input-dir data/intermediate_data/vector_corr_datasets --output-file data/processed/HCP_corr_dataset.parquet --dataset-type "corr"
+"""
+
 from pathlib import Path
 from typing import List
 
@@ -5,22 +14,25 @@ import argparse
 import pandas as pd
 
 
-def limpiar_dataset(df: pd.DataFrame, folder_name: str,file_name: str) -> pd.DataFrame:
+def limpiar_dataset(df: pd.DataFrame) -> pd.DataFrame:
     """
     Limpia un DataFrame siguiendo las reglas definidas.
     """
     # Se hace una copia para evitar advertencias de pandas sobre la asignación en vistas
     df = df.copy()
 
-    # Se eliminan las columnas que no son necesarias
-    if "run" in df.columns:
-        df = df.loc[~df["run"].astype(str).isin({"3", "5"})].copy()
+    # Se filtran los registros para eliminar aquellos con 'run' en {"3", "5"}
+    df = df.loc[~df["run"].astype(str).isin({"3", "5"})].copy()
 
     # Se reemplazan los valores nulos en las columnas 'type_task' y 'type_ref' con "Restin"
     df["type_task"] = df["type_task"].fillna("Restin")
     df["type_ref"] = df["type_ref"].fillna("Restin")
     # Se filtran los registros para mantener solo aquellos con 'type_ref' en {"Restin", "TIM", "TFLA"}
     df = df.loc[df["type_ref"].isin({"Restin", "TIM", "TFLA"})].copy()
+
+    # Se eliminan las columnas que no son necesarias para el entrenamiento
+    columnas_a_eliminar = ["run", "task", "trial_id", "type_ref", "process", "instrumento", "preproc_base"]
+    df = df.drop(columns=columnas_a_eliminar)
 
     return df
 
@@ -29,7 +41,7 @@ def obtener_parquets(carpeta: Path, dataset_type: str) -> List[Path]:
     """
     Obtiene los parquets válidos dependiendo del tipo de dataset.
     """
-    archivos = sorted(carpeta.glob("*.parquet"))
+    archivos = carpeta.glob("*.parquet")
 
     if dataset_type == "corr":
         return archivos
@@ -41,10 +53,7 @@ def obtener_parquets(carpeta: Path, dataset_type: str) -> List[Path]:
     raise ValueError(f"Tipo de dataset desconocido: {dataset_type}")
 
 
-def procesar_carpetas(
-    input_dir: Path,
-    dataset_type: str,
-) -> pd.DataFrame:
+def procesar_carpetas(input_dir: Path,dataset_type: str) -> pd.DataFrame:
     """
     Recorre todas las subcarpetas y concatena los datasets.
     """
@@ -52,7 +61,7 @@ def procesar_carpetas(
         raise FileNotFoundError(f"No existe {input_dir}")
 
     # Se obtienen y ordenan las carpetas dentro del directorio de entrada
-    carpetas = sorted(carpeta for carpeta in input_dir.iterdir() if carpeta.is_dir())
+    carpetas = [carpeta for carpeta in input_dir.iterdir() if carpeta.is_dir()]
 
     dfs = []
 
@@ -67,7 +76,7 @@ def procesar_carpetas(
 
             df = pd.read_parquet(archivo)
 
-            df = limpiar_dataset(df=df, folder_name=carpeta.name, file_name=archivo.name)
+            df = limpiar_dataset(df=df)
 
             dfs.append(df)
 
