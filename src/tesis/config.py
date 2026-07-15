@@ -61,7 +61,7 @@ XGBOOST_HIPERPARAMETERS = {
 
 configs_models = {
     "XGBoost": {
-        "estimator":XGBClassifier,
+        "estimator":XGBClassifier(),
         "search_type":"random",
         "params": {
             "n_estimators":[1000],
@@ -79,7 +79,7 @@ configs_models = {
         }
     },
     "LogisticRegression":{
-        "estimator":LogisticRegression,
+        "estimator":LogisticRegression(),
         "search_type":"grid",
         "params":{
             "random_state":[714],

@@ -23,4 +23,4 @@ dist/
 .ipynb_checkpoints/
 
 # --- Logs de WandB
-wand/
+wandb/

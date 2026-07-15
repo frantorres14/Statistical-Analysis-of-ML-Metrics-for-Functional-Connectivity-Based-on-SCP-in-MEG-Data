@@ -55,7 +55,7 @@ def run_nested_cv(X: pd.DataFrame,
                   n_iter: int = 60,
                   n_outer: int = 6,
                   n_inner: int = 5,
-                  n_jobs: int = 8) -> list:
+                  n_jobs: int = 1) -> list:
     """Ejecuta validación cruzada anidada soportando Grid Search y Random Search dinámicamente.
 
     Args:
