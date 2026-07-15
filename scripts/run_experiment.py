@@ -42,10 +42,8 @@ def main():
         pipeline=pipeline, 
         param_grid=pipeline_params,
         model_name=model_name,
-        raw_params=raw_params,
         data_name=data_name,
-        n_jobs=args.n_jobs,
-
+        n_jobs=args.n_jobs
     )
     
     print_summary(outer_scores)
