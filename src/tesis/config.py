@@ -64,10 +64,10 @@ configs_models = {
         "estimator":XGBClassifier(),
         "search_type":"random",
         "params": {
-            "n_estimators":[1000],
             "objective":["multi:softprob"], 
             "num_class":[7],
             "eval_metric":["mlogloss"],
+            "n_estimators": [100, 300, 500, 800],
             "eta": loguniform(1e-3, 3e-1),
             "max_depth": randint(3, 13),
             "min_child_weight": randint(1, 21),

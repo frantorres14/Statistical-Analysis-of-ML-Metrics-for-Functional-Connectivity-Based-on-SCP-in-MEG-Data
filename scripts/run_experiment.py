@@ -1,3 +1,5 @@
+# Comando para correrlo: uv run scripts/run_experiment.py --data_path "data/processed/HCP_corr_dataset.parquet" --model "LogisticRegression" --search_type "grid"
+
 import argparse
 from dotenv import load_dotenv
 from tesis.train import load_and_split_data, build_pipeline, run_nested_cv
@@ -51,4 +53,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-# Comando para correrlo: uv run scripts/run_experiment.py --data_path "data/processed/HCP_corr_dataset.parquet" --model "LogisticRegression" --search_type "grid"

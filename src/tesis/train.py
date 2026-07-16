@@ -81,7 +81,7 @@ def run_nested_cv(X: pd.DataFrame,
         
         wandb.init(
             project="tesis_hcp",
-            group=f"NestedCV_{model_name}", 
+            group=f"NestedCV_{model_name}_{data_name}", 
             name=f"{model_name}_Fold_{fold + 1}_{data_name}",
             config={
                 "model": model_name,
