@@ -3,8 +3,7 @@ import pandas as pd
 from tesis.tools import guardar_procesamiento_parquet, obtener_metadatos_parquet
 import numpy as np
 from dataclasses import asdict
-import glob
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 
 def guardar_matriz_correlacion(path_archivo: Path, path_output: Path) -> None:
     """Genera una matriz de correlación y la guarda en formato Parquet.
@@ -579,3 +578,206 @@ def dataset_diff_pipeline(
         .astype({col: "float32" for col in float_cols}).drop(columns=columnas_eliminar))
     
     return df
+
+class EsquemasMEGToEEG:
+    """Convierte datos MEG a matrices de correlación en formato EEG.
+
+    Esta clase maneja los mapeos de canales y provee distintos métodos 
+    para calcular la correlación entre señales transformadas.
+
+    Attributes:
+        MAPEO_C1 (Dict[str, str]): Mapeo directo uno a uno de canales EEG a MEG.
+        MAPEO_C2_C3 (Dict[str, List[str]]): Mapeo de un canal EEG a múltiples canales MEG.
+        meg_data (pd.DataFrame): DataFrame con los datos crudos de MEG.
+    """
+
+    MAPEO_C1 = {
+        'Fp1': 'A91', 'F3': 'A40', 'C3': 'A44', 'P3': 'A72',
+        'F7': 'A95', 'T3': 'A130', 'T5': 'A160', 'O1': 'A184',
+        'Fz': 'A4', 'Cz': 'A10', 'Pz': 'A49', 'Fp2': 'A151',
+        'F4': 'A58', 'C4': 'A54', 'P4': 'A78', 'F8': 'A115',
+        'T4': 'A144', 'T6': 'A169', 'O2': 'A167'
+    }
+
+    MAPEO_C2_C3 = {
+        'Fp1': ['A92', 'A91'],
+        'F3': ['A64', 'A39', 'A21', 'A22', 'A40', 'A65', 'A66'],
+        'C3': ['A23', 'A24', 'A25', 'A26', 'A42', 'A43', 'A44', 'A67', 'A69'],
+        'P3': ['A46', 'A47', 'A71', 'A72', 'A100', 'A101', 'A103'],
+        'F7': ['A95', 'A127', 'A93', 'A125', 'A154'],
+        'T3': ['A97', 'A98', 'A99', 'A130', 'A131', 'A158', 'A96', 'A156'],
+        'T5': ['A132', 'A133', 'A134', 'A181', 'A160', 'A161'],
+        'O1': ['A135', 'A163', 'A184'],
+        'Fz': ['A7', 'A4'],
+        'Cz': ['A3', 'A9', 'A10', 'A14', 'A16'],
+        'Pz': ['A28', 'A29', 'A48', 'A49', 'A50', 'A74', 'A75', 'A76'],
+        'Fp2': ['A151'],
+        'F4': ['A86', 'A35', 'A58', 'A85', 'A34', 'A57', 'A84'],
+        'C4': ['A30', 'A31', 'A32', 'A33', 'A53', 'A54', 'A55', 'A56', 'A80', 'A82', 'A83'],
+        'P4': ['A51', 'A77', 'A78', 'A79', 'A107', 'A108', 'A109', 'A110'],
+        'F8': ['A117', 'A115'],
+        'T4': ['A113', 'A114', 'A144', 'A143', 'A171'],
+        'T6': ['A140', 'A141', 'A142', 'A170', 'A168', 'A169', 'A191'],
+        'O2': ['A139', 'A166', 'A167', 'A168']
+    }
+
+    def __init__(self, meg_data: pd.DataFrame):
+        """Inicializa el convertidor almacenando los datos MEG a procesar.
+
+        Args:
+            meg_data (pd.DataFrame): Matriz de datos MEG donde las columnas representan
+                los canales y las filas las muestras temporales.
+        """
+        self.meg_data = meg_data
+
+    def convert(self, method: str = 'c1') -> Tuple[Optional[pd.DataFrame], pd.DataFrame]:
+        """Ejecuta la conversión de canales aplicando el método especificado.
+
+        Args:
+            method (str, optional): Método de conversión a utilizar ('c1', 'c2' o 'c3').
+                Por defecto es 'c1'.
+
+        Returns:
+            Tuple[Optional[pd.DataFrame], pd.DataFrame]: Una tupla que contiene:
+                - DataFrame con las señales EEG mapeadas (None si el método es 'c3').
+                - DataFrame con la matriz de correlación de Pearson.
+
+        Raises:
+            ValueError: Si el método de conversión asignado no está soportado.
+        """
+        if method == 'c1':
+            return self._process_c1()
+        elif method == 'c2':
+            return self._process_c2()
+        elif method == 'c3':
+            return self._process_c3()
+        else:
+            raise ValueError(f"El método '{method}' no está soportado. Use 'c1', 'c2' o 'c3'.")
+
+    def _process_c1(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Procesa los datos mediante mapeo directo de un canal MEG por canal EEG.
+
+        Returns:
+            Tuple[pd.DataFrame, pd.DataFrame]: Señales EEG extraídas y su matriz de correlación.
+        """
+        eeg_data = {}
+        for eeg_channel, meg_channel in self.MAPEO_C1.items():
+            if meg_channel in self.meg_data.columns:
+                eeg_data[eeg_channel] = self.meg_data[meg_channel]
+                
+        df_eeg = pd.DataFrame(eeg_data)
+        df_corr = df_eeg.corr(method='pearson')
+        
+        return df_eeg, df_corr
+
+    def _process_c2(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Procesa los datos promediando múltiples canales MEG para formar un canal EEG.
+
+        Returns:
+            Tuple[pd.DataFrame, pd.DataFrame]: Señales EEG promediadas y su matriz de correlación.
+        """
+        eeg_data = {}
+        for eeg_channel, meg_channels in self.MAPEO_C2_C3.items():
+            valid_meg_channels = [chan for chan in meg_channels if chan in self.meg_data.columns]
+            if valid_meg_channels:
+                eeg_data[eeg_channel] = np.mean(self.meg_data[valid_meg_channels], axis=1)
+                
+        df_eeg = pd.DataFrame(eeg_data)
+        df_corr = df_eeg.corr(method='pearson')
+        
+        return df_eeg, df_corr
+
+    def _process_c3(self) -> Tuple[None, pd.DataFrame]:
+        """Procesa los datos promediando las correlaciones individuales de pares de canales MEG.
+
+        A diferencia de c1 y c2, este método no genera una señal temporal EEG consolidada,
+        sino que calcula directamente la matriz de conectividad (correlación).
+
+        Returns:
+            Tuple[None, pd.DataFrame]: Tupla con None en el espacio de señales temporales 
+            y el DataFrame correspondiente a la matriz de correlación final.
+        """
+        eeg_channels = list(self.MAPEO_C2_C3.keys())
+        n_channels = len(eeg_channels)
+        corr_matrix = np.zeros((n_channels, n_channels))
+        
+        for i, eeg_ch1 in enumerate(eeg_channels):
+            for j, eeg_ch2 in enumerate(eeg_channels):
+                meg_ch1 = [ch for ch in self.MAPEO_C2_C3[eeg_ch1] if ch in self.meg_data.columns]
+                meg_ch2 = [ch for ch in self.MAPEO_C2_C3[eeg_ch2] if ch in self.meg_data.columns]
+                
+                if meg_ch1 and meg_ch2:
+                    correlations = []
+                    for m1 in meg_ch1:
+                        for m2 in meg_ch2:
+                            corr = self.meg_data[m1].corr(self.meg_data[m2])
+                            correlations.append(corr)
+                            
+                    corr_matrix[i, j] = np.mean(correlations)
+                else:
+                    corr_matrix[i, j] = np.nan
+                    
+        df_corr = pd.DataFrame(corr_matrix, index=eeg_channels, columns=eeg_channels)
+        
+        return None, df_corr
+    
+def guardar_matriz_esquema(path_archivo: Path, path_output: Path) -> None:
+    """Calcula y guarda la matriz de correlación según el esquema especificado.
+
+    Args:
+        path_archivo (Path): Ruta al archivo Parquet que contiene los datos MEG.
+        path_output (Path): Directorio donde se guardará la matriz de correlación resultante.
+        esquema (str): Esquema de correlación a utilizar ('C1', 'C2' o 'C3').
+
+    Raises:
+        ValueError: Si el esquema proporcionado no es válido.
+    """
+    meg_data = pd.read_parquet(path_archivo)
+    convertidor = EsquemasMEGToEEG(meg_data)
+
+    # Se determina el esquema a utilizar a partir del nombre del archivo
+    esquema = path_archivo.stem.split('_')[-1].upper()
+
+    _, corr_matrix = convertidor.convert(method=esquema.lower())
+    
+    metadata = obtener_metadatos_parquet(path_archivo)
+    
+    guardar_procesamiento_parquet(
+        df= corr_matrix,
+        path_archivo= path_archivo,
+        subfijo_proceso= "corr",
+        metadata= metadata,
+        path_save= path_output,
+    )
+
+def esquemas_sujeto_pipeline(sujeto: str, input_data_dir: Path, output_data_dir: Path, esquema: str) -> str:
+    """Genera matrices de correlación para todos los archivos de un sujeto.
+
+    Crea el directorio de salida correspondiente al sujeto, localiza todos
+    los archivos en formato Parquet dentro de su carpeta de origen y calcula
+    la matriz de correlación de cada uno de ellos. Los resultados se guardan
+    en el directorio de salida manteniendo la organización por sujeto.
+
+    Args:
+        sujeto: Identificador único del sujeto cuyos archivos serán
+            procesados.
+        input_data_dir: Directorio raíz que contiene las carpetas de entrada
+            organizadas por sujeto.
+        output_data_dir: Directorio raíz donde se almacenarán las matrices
+            de correlación generadas.
+        esquema: Esquema de correlación a utilizar (C1, C2 o C3).
+
+    Returns:
+        Mensaje indicando que el procesamiento del sujeto ha finalizado
+        correctamente.
+    """
+    path_sujeto = input_data_dir / sujeto
+    path_sujeto_guardar = output_data_dir / sujeto
+    path_sujeto_guardar.mkdir(parents=True, exist_ok=True)
+
+    archivos = path_sujeto.glob("*.parquet")
+
+    for archivo in archivos:
+        guardar_matriz_esquema(path_archivo= archivo, path_output= path_sujeto_guardar)
+
+    return f"Sujeto {sujeto} finalizado."
