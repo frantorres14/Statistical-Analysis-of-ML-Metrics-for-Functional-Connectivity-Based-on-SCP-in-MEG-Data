@@ -721,7 +721,7 @@ class EsquemasMEGToEEG:
         
         return None, df_corr
     
-def guardar_matriz_esquema(path_archivo: Path, path_output: Path) -> None:
+def guardar_matriz_esquema(path_archivo: Path, path_output: Path, esquema: str) -> None:
     """Calcula y guarda la matriz de correlación según el esquema especificado.
 
     Args:
@@ -734,9 +734,6 @@ def guardar_matriz_esquema(path_archivo: Path, path_output: Path) -> None:
     """
     meg_data = pd.read_parquet(path_archivo)
     convertidor = EsquemasMEGToEEG(meg_data)
-
-    # Se determina el esquema a utilizar a partir del nombre del archivo
-    esquema = path_output.name.split('_')[-1].upper()
 
     _, corr_matrix = convertidor.convert(method=esquema.lower())
     
@@ -775,9 +772,12 @@ def esquemas_sujeto_pipeline(sujeto: str, input_data_dir: Path, output_data_dir:
     path_sujeto_guardar = output_data_dir / sujeto
     path_sujeto_guardar.mkdir(parents=True, exist_ok=True)
 
+    # Se determina el esquema a utilizar a partir del nombre del archivo
+    esquema = output_data_dir.name.split('_')[-1].lower()  # Extrae 'c1', 'c2' o 'c3' del nombre del directorio de salida
+
     archivos = path_sujeto.glob("*.parquet")
 
     for archivo in archivos:
-        guardar_matriz_esquema(path_archivo= archivo, path_output= path_sujeto_guardar)
+        guardar_matriz_esquema(path_archivo= archivo, path_output= path_sujeto_guardar, esquema= esquema)
 
     return f"Sujeto {sujeto} finalizado."
