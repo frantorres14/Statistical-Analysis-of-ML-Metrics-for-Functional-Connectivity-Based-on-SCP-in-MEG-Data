@@ -86,7 +86,9 @@ def run_nested_cv(X: pd.DataFrame,
             config={
                 "model": model_name,
                 "fold": fold + 1,
-                "search_type": search_type
+                "search_type": search_type,
+                "data_name": data_name,
+                "k_inner_folds": n_inner
             }
         )
         

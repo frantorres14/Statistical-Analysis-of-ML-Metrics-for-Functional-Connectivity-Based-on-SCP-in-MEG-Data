@@ -742,7 +742,7 @@ def guardar_matriz_esquema(path_archivo: Path, path_output: Path, esquema: str) 
     guardar_procesamiento_parquet(
         df= corr_matrix,
         path_archivo= path_archivo,
-        subfijo_proceso= "corr",
+        subfijo_proceso=  esquema,
         metadata= metadata,
         path_save= path_output,
     )
