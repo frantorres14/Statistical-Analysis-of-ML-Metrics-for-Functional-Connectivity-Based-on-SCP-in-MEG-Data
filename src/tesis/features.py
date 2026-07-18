@@ -736,7 +736,7 @@ def guardar_matriz_esquema(path_archivo: Path, path_output: Path) -> None:
     convertidor = EsquemasMEGToEEG(meg_data)
 
     # Se determina el esquema a utilizar a partir del nombre del archivo
-    esquema = path_archivo.stem.split('_')[-1].upper()
+    esquema = path_output.name.split('_')[-1].upper()
 
     _, corr_matrix = convertidor.convert(method=esquema.lower())
     
@@ -750,7 +750,7 @@ def guardar_matriz_esquema(path_archivo: Path, path_output: Path) -> None:
         path_save= path_output,
     )
 
-def esquemas_sujeto_pipeline(sujeto: str, input_data_dir: Path, output_data_dir: Path, esquema: str) -> str:
+def esquemas_sujeto_pipeline(sujeto: str, input_data_dir: Path, output_data_dir: Path) -> str:
     """Genera matrices de correlación para todos los archivos de un sujeto.
 
     Crea el directorio de salida correspondiente al sujeto, localiza todos
