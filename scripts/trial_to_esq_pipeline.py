@@ -42,12 +42,6 @@ def parse_args() -> argparse.Namespace:
         help="Directorio de salida (datos correlacionados)",
     )
     parser.add_argument(
-        "--esquema",
-        type=str,
-        required=True,
-        help="Esquema de correlación (C1, C2 o C3)",
-    )
-    parser.add_argument(
         "--workers",
         type=int,
         default=max(1, mp.cpu_count() - 1),
