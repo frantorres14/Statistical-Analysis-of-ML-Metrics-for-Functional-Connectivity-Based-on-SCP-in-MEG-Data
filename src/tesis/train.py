@@ -80,6 +80,7 @@ def run_nested_cv(X: pd.DataFrame,
     for fold, (train_idx, test_idx) in enumerate(cv_outer.split(X, y, groups)):
         
         wandb.init(
+            entity="frantorresia",
             project="tesis_hcp",
             group=f"NestedCV_{model_name}_{data_name}", 
             name=f"{model_name}_Fold_{fold + 1}_{data_name}",
