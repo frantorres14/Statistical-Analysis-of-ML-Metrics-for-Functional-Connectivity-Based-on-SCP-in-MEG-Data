@@ -53,6 +53,7 @@ def run_nested_cv(X: pd.DataFrame,
                   n_iter: int = 60,
                   n_outer: int = 6,
                   n_inner: int = 5,
+                  start_fold: int = 1,
                   data_name: str = "dataset",
                   n_jobs: int = 1) -> list:
     """Ejecuta validación cruzada anidada soportando Grid Search y Random Search dinámicamente.
@@ -78,6 +79,10 @@ def run_nested_cv(X: pd.DataFrame,
     outer_scores = []
     
     for fold, (train_idx, test_idx) in enumerate(cv_outer.split(X, y, groups)):
+
+        if (fold + 1) < start_fold:
+            print(f"Saltando Fold {fold + 1}...")
+            continue
         
         wandb.init(
             entity="frantorresia",

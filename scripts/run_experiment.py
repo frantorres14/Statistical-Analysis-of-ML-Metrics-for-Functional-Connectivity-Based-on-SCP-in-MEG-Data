@@ -11,10 +11,11 @@ load_dotenv() #Carga las variables de entornos, en específico la API de W&B par
 def parse_args() -> argparse.Namespace:
     """Parsea los argumentos de la línea de comandos."""
     parser = argparse.ArgumentParser(description="Entrenamiento con Nested CV")
-    parser.add_argument("--data_path", type=str, help="Ruta al archivo de datos")
+    parser.add_argument("--data_path", type=str, required=True, help="Ruta al archivo de datos")
     parser.add_argument("--model", type=str, required=True, help="Nombre del modelo")
     parser.add_argument("--search_type", type=str, required=True, choices=["grid", "random"], help="Tipo de búsqueda de hiperparámetros")
     parser.add_argument("--n_jobs", type=int, default=1, help="Número de trabajos en paralelo para la búsqueda de hiperparámetros")
+    parser.add_argument("--start_fold", type=int, default=1, help="Número de fold inicial para la validación cruzada anidada")
 
     return parser.parse_args()
 
@@ -45,6 +46,7 @@ def main():
         param_grid=pipeline_params,
         model_name=model_name,
         search_type=args.search_type,
+        start_fold=args.start_fold,
         data_name=data_name,
         n_jobs=args.n_jobs
     )
