@@ -25,21 +25,27 @@ def load_and_split_data(filepath: str) -> tuple:
     
     return X, y, groups
 
-def build_pipeline(estimator, n_components: int = 400, random_state: int = 14) -> Pipeline:
+def build_pipeline(estimator, pca: bool = True, n_components: int = 400, random_state: int = 14) -> Pipeline:
     """Construye un pipeline de scikit-learn con PCA y el estimador proporcionado.
 
     Args:
         estimator: Instancia de un modelo de scikit-learn.
+        pca (bool, optional): Indica si se debe aplicar PCA antes del estimador. Por defecto es True.
         n_components (int, optional): Número de componentes principales a retener. Por defecto es 400.
         random_state (int, optional): Semilla para la reproducibilidad. Por defecto es 14.
 
     Returns:
         Pipeline: El pipeline configurado.
     """
-    pipeline = Pipeline([
-        ('pca', PCA(n_components=n_components, random_state=random_state)),
-        ('clf', estimator)
-    ])
+    if not pca:
+        pipeline = Pipeline([
+            ('clf', estimator)
+        ])
+    else:
+        pipeline = Pipeline([
+            ('pca', PCA(n_components=n_components, random_state=random_state)),
+            ('clf', estimator)
+        ])
     
     return pipeline
 

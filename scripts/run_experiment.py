@@ -15,6 +15,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", type=str, required=True, help="Nombre del modelo")
     parser.add_argument("--search_type", type=str, required=True, choices=["grid", "random"], help="Tipo de búsqueda de hiperparámetros")
     parser.add_argument("--n_jobs", type=int, default=1, help="Número de trabajos en paralelo para la búsqueda de hiperparámetros")
+    parser.add_argument("--pca", type=bool, default=True, help="Indica si se debe aplicar PCA antes del entrenamiento")
     parser.add_argument("--start_fold", type=int, default=1, help="Número de fold inicial para la validación cruzada anidada")
 
     return parser.parse_args()
@@ -48,6 +49,7 @@ def main():
         search_type=args.search_type,
         start_fold=args.start_fold,
         data_name=data_name,
+        pca=args.pca,
         n_jobs=args.n_jobs
     )
     
