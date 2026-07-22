@@ -1,12 +1,26 @@
 # Comando para correrlo: uv run scripts/run_experiment.py --data_path "data/processed/HCP_corr_dataset.parquet" --model "LogisticRegression" --search_type "grid"
 
 import argparse
+import os
 from dotenv import load_dotenv
 from tesis.train import load_and_split_data, build_pipeline, run_nested_cv
 from tesis.evaluate import print_summary
 from tesis.config import configs_models
 
 load_dotenv() #Carga las variables de entornos, en específico la API de W&B para iniciar sesión
+
+
+def str2bool(value):
+    """Convierte un valor de cadena a booleano para argparse."""
+    if isinstance(value, bool):
+        return value
+    value_lower = value.lower()
+    if value_lower in ("yes", "true", "t", "y", "1"):
+        return True
+    if value_lower in ("no", "false", "f", "n", "0"):
+        return False
+    raise argparse.ArgumentTypeError("Boolean value expected. Use true/false, yes/no, 1/0.")
+
 
 def parse_args() -> argparse.Namespace:
     """Parsea los argumentos de la línea de comandos."""
@@ -15,7 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", type=str, required=True, help="Nombre del modelo")
     parser.add_argument("--search_type", type=str, required=True, choices=["grid", "random"], help="Tipo de búsqueda de hiperparámetros")
     parser.add_argument("--n_jobs", type=int, default=1, help="Número de trabajos en paralelo para la búsqueda de hiperparámetros")
-    parser.add_argument("--pca", type=bool, default=True, help="Indica si se debe aplicar PCA antes del entrenamiento")
+    parser.add_argument("--pca", type=str2bool, nargs="?", const=True, default=True, help="Indica si se debe aplicar PCA antes del entrenamiento (acepta true/false)")
     parser.add_argument("--start_fold", type=int, default=1, help="Número de fold inicial para la validación cruzada anidada")
 
     return parser.parse_args()
