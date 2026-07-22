@@ -35,7 +35,7 @@ def main():
     X, y, groups = load_and_split_data(filepath)
     
     pipeline_params = {f"clf__{key}": value for key, value in raw_params.items()}
-    pipeline = build_pipeline(estimator=estimator)
+    pipeline = build_pipeline(estimator=estimator, pca=args.pca, n_components=400)
 
     data_name = filepath.split("/")[-1].replace(".parquet", "")
     
@@ -49,7 +49,6 @@ def main():
         search_type=args.search_type,
         start_fold=args.start_fold,
         data_name=data_name,
-        pca=args.pca,
         n_jobs=args.n_jobs
     )
     
