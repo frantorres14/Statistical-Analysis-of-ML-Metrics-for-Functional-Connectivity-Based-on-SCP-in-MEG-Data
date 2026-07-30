@@ -46,18 +46,6 @@ COLUMNAS_TRIALINFO_WRKMEM= [
     "prev_resp_duration", "prev_is_first_block", "prev_is_last_block", "press_on_onset", "has_trial_nans"
 ]
 
-# --- HIPERPARAMETROS DE LOS MODELOS
-XGBOOST_HIPERPARAMETERS = {
-    "eta": [0.005, 0.01, 0.02, 0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3],
-    "max_depth": [3, 4, 5, 6, 7, 8, 9, 10, 12],
-    "min_child_weight": [1, 2, 3, 5, 7, 10, 15, 20],
-    "gamma": [0, 0.1, 0.3, 0.5, 1, 2, 3, 5, 10],
-    "subsample": [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-    "colsample_bytree": [0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-    "reg_alpha": [0, 0.01, 0.1, 0.5, 1, 2, 5, 10],
-    "reg_lambda": [0.1, 0.5, 1, 2,5, 10, 20, 50]
-}
-
 
 configs_models = {
     "XGBoost": {
