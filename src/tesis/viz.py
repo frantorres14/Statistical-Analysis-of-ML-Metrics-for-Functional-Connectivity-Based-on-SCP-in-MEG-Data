@@ -3,9 +3,100 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-from typing import Union
-
+from typing import Union, List, Optional
 from tesis.features import corr_matrix_to_vector
+import json
+import re
+
+
+
+def get_dataframe_from_json(json_path: Union[str, Path]) -> pd.DataFrame:
+    """Lee un archivo JSON con formato de tabla y lo convierte en un DataFrame.
+
+    Extrae las llaves 'data' y 'columns' del archivo JSON (típicamente generado 
+    por Weights & Biases) y construye un DataFrame de pandas.
+
+    Args:
+        json_path (Union[str, Path]): Ruta al archivo JSON que contiene la tabla.
+
+    Returns:
+        pd.DataFrame: DataFrame construido a partir de los datos y columnas extraídas.
+    """
+    with open(json_path, "r", encoding="utf-8") as f:
+        data_json = json.load(f)
+
+    df_conf = pd.DataFrame(data=data_json["data"], columns=data_json["columns"])
+    matriz_conf = df_conf.pivot(index="Actual", columns="Predicted", values="nPredictions")
+    return matriz_conf
+
+
+def plot_confusion_matrix(
+    json_path: Union[str, Path],
+    labels: List[str],
+    save_path: Optional[Union[str, Path]] = None,
+    show_plot: bool = True
+) -> None:
+    """Genera, guarda y/o muestra el mapa de calor de una matriz de confusión.
+
+    Lee el archivo JSON especificado, transforma los datos en una matriz cuadrada 
+    y extrae automáticamente el nombre del modelo, fold y dataset basándose en 
+    el nombre de la carpeta contenedora utilizando expresiones regulares.
+
+    Args:
+        json_path (Union[str, Path]): Ruta al archivo JSON con los datos de la matriz.
+        labels (List[str]): Lista de etiquetas que se usarán en los ejes X e Y.
+        save_path (Optional[Union[str, Path]], opcional): Ruta completa (incluyendo 
+            el nombre del archivo y extensión .png) donde se guardará la figura. 
+            Si es None, la imagen no se guarda en disco. Por defecto es None.
+        show_plot (bool, opcional): Define si el gráfico debe renderizarse en 
+            pantalla usando plt.show(). Si es False, cierra la figura para liberar 
+            memoria. Por defecto es True.
+    """
+    json_path = Path(json_path)
+
+    # Obtener el DataFrame de forma modularizada
+    df_conf = get_dataframe_from_json(json_path)
+
+    # Extraer modelo, fold y dataset de la ruta (parents[1] es la carpeta del experimento)
+    experiment_folder = json_path.parents[1].name
+    pattern = r"^(?P<model>.+?)_Fold_(?P<fold>\d+)_(?P<dataset>.+)$"
+    match = re.match(pattern, experiment_folder)
+
+    if match:
+        model_name = match.group("model")
+        fold_num = match.group("fold")
+        dataset_name = match.group("dataset")
+    else:
+        model_name, fold_num, dataset_name = "Desconocido", "N/A", "Desconocido"
+
+    # Generar el gráfico
+    fig, ax = plt.subplots(figsize=(8, 5))
+    sns.heatmap(
+        df_conf,
+        annot=True,
+        fmt="g",
+        cmap="Blues",
+        xticklabels=labels,
+        yticklabels=labels,
+        ax=ax
+    )
+
+    ax.set_title(f"Modelo: {model_name}\nData: {dataset_name}\nFold: {fold_num}")
+    ax.set_xlabel("Predicho")
+    ax.set_ylabel("Real")
+
+    # Guardar la imagen si se proporcionó una ruta
+    if save_path:
+        save_path = Path(save_path)
+        # Crea los directorios intermedios en caso de que no existan
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(save_path, bbox_inches="tight", dpi=300)
+
+    # Mostrar o cerrar gráfico
+    if show_plot:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 def load_subject_vectors(base_path: Union[str, Path], feature_type: str) -> pd.DataFrame:

@@ -6,6 +6,7 @@ import re
 import pyarrow as pa
 import pyarrow.parquet as pq
 from dataclasses import dataclass
+import numpy as np
 
 def obtener_lista_sujetos(path: Path) -> list[Path]:
     """
@@ -246,3 +247,52 @@ def procesamiento_paralelo_por_sujeto(lista_sujetos: List[str],
                 print(f"[ERROR crítico en {sujeto}]: {e}")
 
 
+import pandas as pd
+
+
+def process_accuracy_data(df: pd.DataFrame) -> pd.DataFrame:
+    """Transforma y resume un DataFrame extracto de métricas por modelo y conjunto de datos.
+
+    Filtra las columnas relativas a 'accuracy_group', itera sobre los modelos
+    y datasets presentes en el DataFrame de entrada y genera una nueva estructura
+    pivotada con los resultados limpios por sujeto.
+
+    Parameters
+    df : pd.DataFrame
+        DataFrame de origen que debe contener al menos las columnas 'model',
+        'data_name' y una o más columnas cuyo nombre empiece con 'accuracy_group'.
+
+    Returns
+    pd.DataFrame
+        Un DataFrame reestructurado donde cada fila representa un sujeto
+        asociado a un modelo específico, mostrando los valores correspondientes
+        a cada accuracy de cada dataset en columnas independientes.
+    """
+    data = []
+
+    # Se extraen los nombres de las columnas de los accuracy
+    accuracy_group_cols = [
+        col for col in df.columns if col.startswith("accuracy_group")
+    ]
+
+    # Se extraen los accuracy de cada sujeto por dataset y por modelo
+    for model in df["model"].unique():
+        for group in accuracy_group_cols:
+            fila = {}
+            group_name = group.split("_")[-1]
+            fila["sujeto"] = group_name
+            fila["modelo"] = model
+
+            for dataset in sorted(df["data_name"].unique(), reverse=True):
+                df_query = df.query(
+                    f"model == '{model}' & data_name == '{dataset}'"
+                )
+                values = df_query[group].dropna().values
+                data_name = dataset.split("_")[1]
+
+                # Previene errores de índice en caso de que una combinación no arroje valores
+                fila[data_name] = values[0] if len(values) > 0 else None
+
+            data.append(fila)
+
+    return pd.DataFrame(data)

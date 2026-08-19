@@ -7,7 +7,7 @@ name = "tesis"
 version = "0.1.0"
 description = "Análisis de datos MEG del Human Connectome Project (S1200) - Matrices de correlación"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "Francisco Javier Torres Santana", email = "francisco.torressa@uaem.edu.mx"}
@@ -31,11 +31,12 @@ dependencies = [
     "boto3>=1.26.0",
     "jupyter>=1.0.0",
     "ipython>=8.0.0",
-    "scikit-learn>=1.2.0",
+    "scikit-learn==1.8.0",
     "pyarrow>=21.0.0",
-    "xgboost",
+    "xgboost==3.2.0",
     "wandb>=0.16.0",
-    "python-dotenv>=1.0.0"
+    "python-dotenv>=1.0.0",
+    "mne==1.10.2"
 ]
 
 [project.optional-dependencies]

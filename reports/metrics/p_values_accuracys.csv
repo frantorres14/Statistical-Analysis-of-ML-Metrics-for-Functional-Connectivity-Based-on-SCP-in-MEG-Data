@@ -1,0 +1,17 @@
+,modelo,dataset 1,dataset 2,prueba,estadistico,p valor
+0,LogisticRegression,corr,diff,Mann-Whitney U,1054.5,0.4772
+1,LogisticRegression,corr,diff,Kolmogorov-Smirnov,0.1458,0.6927
+2,LogisticRegression,corr,C1,Mann-Whitney U,1901.5,0.0
+3,LogisticRegression,corr,C1,Kolmogorov-Smirnov,0.5,0.0
+4,LogisticRegression,corr,C2,Mann-Whitney U,1741.0,0.0
+5,LogisticRegression,corr,C2,Kolmogorov-Smirnov,0.375,0.0021
+6,LogisticRegression,corr,C3,Mann-Whitney U,1771.0,0.0
+7,LogisticRegression,corr,C3,Kolmogorov-Smirnov,0.4167,0.0004
+8,XGBoost,corr,diff,Mann-Whitney U,1121.0,0.8232
+9,XGBoost,corr,diff,Kolmogorov-Smirnov,0.125,0.8528
+10,XGBoost,corr,C1,Mann-Whitney U,1807.0,0.0
+11,XGBoost,corr,C1,Kolmogorov-Smirnov,0.5833,0.0
+12,XGBoost,corr,C2,Mann-Whitney U,1910.0,0.0
+13,XGBoost,corr,C2,Kolmogorov-Smirnov,0.625,0.0
+14,XGBoost,corr,C3,Mann-Whitney U,1840.0,0.0
+15,XGBoost,corr,C3,Kolmogorov-Smirnov,0.5208,0.0
