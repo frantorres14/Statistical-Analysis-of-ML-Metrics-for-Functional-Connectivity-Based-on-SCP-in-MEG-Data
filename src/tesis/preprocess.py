@@ -257,6 +257,7 @@ def obtener_trials_validos(data_hcp: DataHCP, canales: Optional[List[str]] = Non
     for trial in trials_validos:
         df_trial = data_hcp.get_df_trial(i_trial=trial, canales= canales, time= True)
         df_trial = df_trial[df_trial["time"] > 0] # Se obtienen solo los valores donde empieza el trial
+        #df_trial = df_trial.query("time >= -0.15 and time <= 0.15")
         df_trial.reset_index(drop=True, inplace=True)  # reiniciar indices
         task_type = task_type_map[info[trial, task_type_col]] # Se obtuiene el tipo de tarea
         yield str(trial), task_type, df_trial
@@ -455,7 +456,7 @@ def filtrar_archivo(path_archivo: Path, path_sujeto_guardar: Path) -> None:
     elif tarea in {"Wrkmem", "Motort"}:
         for trial_id, type_task, df_valido in obtener_trials_validos(data, canales=CANALES_VALIDOS):
             df_valido = df_valido.drop(columns= ["time"])
-            metadata.trial_id= trial_id
+            metadata.trial_id= str(trial_id)
             metadata.type_task= type_task
             df_filtrado = aplicar_filtro_broadband(df_valido)
             guardar_procesamiento_parquet(
