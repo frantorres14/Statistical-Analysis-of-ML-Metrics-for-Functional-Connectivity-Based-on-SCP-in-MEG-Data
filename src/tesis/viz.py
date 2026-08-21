@@ -162,7 +162,6 @@ def plot_scp_correlation(
     ax_boxplot.tick_params(axis='x', rotation=90)
 
     plt.tight_layout()
-    plt.show()
 
     # Guardar la figura si se proporciona una ruta en alta resolución
     if save:
@@ -286,7 +285,6 @@ def heatmaps_correlaciones_por_pares_de_tareas(datos_consolidados, title, type_r
         ax.tick_params(axis='y', rotation=0)
 
     plt.tight_layout()
-    plt.show()
 
     if save:
         plt.savefig(save, dpi=300, bbox_inches='tight')
@@ -390,7 +388,6 @@ def graficar_boxplot_correlaciones(df_resultados, ref_1, ref_2, save=None):
 
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout()
-    plt.show()
 
     if save:
         plt.savefig(save, dpi=300, bbox_inches='tight')
