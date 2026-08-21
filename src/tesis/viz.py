@@ -205,7 +205,7 @@ def cargar_vectores_datasets(path, type_refs, dataset_type):
     por pares.
 
     Args:
-        base_path (pathlib.Path): Ruta base del directorio con los datos.
+        path (pathlib.Path): Ruta base del directorio con los datos.
         type_refs (list of str): Lista con los tipos de referencia a procesar.
         dataset_type (str): Tipo de dataset a cargar. Acepta 'corr' para datasets 
             de correlación y 'diff' para datasets de diferencia.
@@ -251,7 +251,7 @@ def cargar_vectores_datasets(path, type_refs, dataset_type):
 
     return datos_correlacionados
 
-def heatmaps_correlaciones_por_pares_de_tareas(datos_consolidados, type_refs, cmap, vmin, vmax, save=None):
+def heatmaps_correlaciones_por_pares_de_tareas(datos_consolidados, title, type_refs, cmap, vmin, vmax, save=None):
     """Genera y muestra heatmaps a partir de datos correlacionados por pares de tareas
     para cada sujeto de las matrices de correlación promediadas por tarea.
 
@@ -260,6 +260,7 @@ def heatmaps_correlaciones_por_pares_de_tareas(datos_consolidados, type_refs, cm
 
     Args:
         datos_consolidados (dict): Diccionario con los datos procesados.
+        title: Titulo de la imagen
         type_refs (list of str): Lista con los tipos de referencia (determina los subplots).
         cmap (str): Mapa de colores utilizado por Seaborn.
         vmin (float): Valor mínimo para la escala de color.
@@ -277,7 +278,7 @@ def heatmaps_correlaciones_por_pares_de_tareas(datos_consolidados, type_refs, cm
         
         sns.heatmap(df_heatmap, cmap=cmap, vmin=vmin, vmax=vmax, ax=ax, cbar=True)
         
-        ax.set_title(f"Correlaciones para matrices de correlación promediadas por tareas : {type_ref}", fontsize=14, pad=15)
+        ax.set_title(f"{title}: {type_ref}", fontsize=14, pad=15)
         ax.set_xlabel("Sujetos", fontsize=12)
         ax.set_ylabel("Pares de Tareas", fontsize=12)
         
